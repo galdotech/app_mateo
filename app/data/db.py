@@ -75,3 +75,22 @@ def contar_reparaciones_pendientes() -> int:
     cur = _ensure_conn().cursor()
     cur.execute("SELECT COUNT(*) FROM reparaciones WHERE estado = 'Pendiente'")
     return cur.fetchone()[0]
+
+def listar_clientes():
+    cur = _ensure_conn().cursor()
+    cur.execute("SELECT id, nombre FROM clientes ORDER BY id")
+    return cur.fetchall()
+
+def add_cliente(nombre: str) -> int:
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute("INSERT INTO clientes (nombre) VALUES (?)", (nombre,))
+    conn.commit()
+    return cur.lastrowid
+
+def delete_cliente(cliente_id: int) -> bool:
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM clientes WHERE id = ?", (cliente_id,))
+    conn.commit()
+    return cur.rowcount > 0
