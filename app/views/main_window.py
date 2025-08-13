@@ -2,6 +2,7 @@
 from PySide6.QtWidgets import QMainWindow, QMessageBox
 from app.ui.ui_main_window import Ui_MainWindow
 from app.data import db
+from app.views.clientes_dialog import ClientesDialog
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -11,12 +12,17 @@ class MainWindow(QMainWindow):
 
         # Conexión de acciones del menú
         self.ui.actionSalir.triggered.connect(self.close)
-        self.ui.actionClientes.triggered.connect(lambda: self._no_impl("Clientes"))
+        self.ui.actionClientes.triggered.connect(self._open_clientes)
         self.ui.actionDispositivos.triggered.connect(lambda: self._no_impl("Dispositivos"))
         self.ui.actionInventario.triggered.connect(lambda: self._no_impl("Inventario"))
         self.ui.actionReparaciones.triggered.connect(lambda: self._no_impl("Reparaciones"))
 
         # Resumen inicial
+        self._refresh_summary()
+
+    def _open_clientes(self):
+        dlg = ClientesDialog(self)
+        dlg.exec()
         self._refresh_summary()
 
     def _refresh_summary(self):
