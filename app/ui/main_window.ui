@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry"><rect><x>0</x><y>0</y><width>820</width><height>560</height></rect></property>
+  <property name="windowTitle"><string>Inventario Base</string></property>
+
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayoutMain">
+    <item>
+     <widget class="QGroupBox" name="groupBoxResumen">
+      <property name="title"><string>Resumen</string></property>
+      <layout class="QFormLayout" name="formLayoutResumen">
+       <item row="0" column="0"><widget class="QLabel" name="labelClientes"><property name="text"><string>Total clientes:</string></property></widget></item>
+       <item row="0" column="1"><widget class="QLabel" name="label_total_clientes"><property name="text"><string>0</string></property></widget></item>
+
+       <item row="1" column="0"><widget class="QLabel" name="labelDispositivos"><property name="text"><string>Total dispositivos:</string></property></widget></item>
+       <item row="1" column="1"><widget class="QLabel" name="label_total_dispositivos"><property name="text"><string>0</string></property></widget></item>
+
+       <item row="2" column="0"><widget class="QLabel" name="labelProductos"><property name="text"><string>Total productos:</string></property></widget></item>
+       <item row="2" column="1"><widget class="QLabel" name="label_total_productos"><property name="text"><string>0</string></property></widget></item>
+
+       <item row="3" column="0"><widget class="QLabel" name="labelReparaciones"><property name="text"><string>Reparaciones pendientes:</string></property></widget></item>
+       <item row="3" column="1"><widget class="QLabel" name="label_total_reparaciones"><property name="text"><string>0</string></property></widget></item>
+      </layout>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+
+  <widget class="QMenuBar" name="menubar">
+   <widget class="QMenu" name="menuArchivo">
+    <property name="title"><string>&amp;Archivo</string></property>
+    <addaction name="actionSalir"/>
+   </widget>
+   <widget class="QMenu" name="menuModulos">
+    <property name="title"><string>&amp;Módulos</string></property>
+    <addaction name="actionClientes"/>
+    <addaction name="actionDispositivos"/>
+    <addaction name="actionInventario"/>
+    <addaction name="actionReparaciones"/>
+   </widget>
+   <addaction name="menuArchivo"/>
+   <addaction name="menuModulos"/>
+  </widget>
+
+  <widget class="QStatusBar" name="statusbar"/>
+
+  <action name="actionSalir"><property name="text"><string>Salir</string></property></action>
+  <action name="actionClientes"><property name="text"><string>Clientes</string></property></action>
+  <action name="actionDispositivos"><property name="text"><string>Dispositivos</string></property></action>
+  <action name="actionInventario"><property name="text"><string>Inventario</string></property></action>
+  <action name="actionReparaciones"><property name="text"><string>Reparaciones</string></property></action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

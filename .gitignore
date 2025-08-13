@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Bases de datos locales / binarios
+*.db
+*.sqlite3
+
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# Qt/OS
+*.qrc.py
+.DS_Store
+Thumbs.db
+GIT
