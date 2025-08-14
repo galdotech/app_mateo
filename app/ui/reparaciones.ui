@@ -39,23 +39,43 @@
       <widget class="QLineEdit" name="lineEditModelo"/>
      </item>
      <item row="3" column="0">
-      <widget class="QLabel" name="labelDescripcion">
+      <widget class="QLabel" name="labelDiagnostico">
        <property name="text">
-        <string>Descripción</string>
+        <string>Diagnóstico</string>
        </property>
       </widget>
      </item>
      <item row="3" column="1">
-      <widget class="QPlainTextEdit" name="plainTextDescripcion"/>
+      <widget class="QPlainTextEdit" name="plainTextDiagnostico"/>
      </item>
      <item row="4" column="0">
+      <widget class="QLabel" name="labelAcciones">
+       <property name="text">
+        <string>Acciones</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1">
+      <widget class="QPlainTextEdit" name="plainTextAcciones"/>
+     </item>
+     <item row="5" column="0">
+      <widget class="QLabel" name="labelPiezas">
+       <property name="text">
+        <string>Piezas usadas</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="1">
+      <widget class="QPlainTextEdit" name="plainTextPiezas"/>
+     </item>
+     <item row="6" column="0">
       <widget class="QLabel" name="labelEstado">
        <property name="text">
         <string>Estado</string>
        </property>
       </widget>
      </item>
-     <item row="4" column="1">
+     <item row="6" column="1">
       <widget class="QComboBox" name="comboEstado">
        <item>
         <property name="text">
@@ -67,21 +87,205 @@
          <string>Finalizada</string>
         </property>
        </item>
+       <item>
+        <property name="text">
+         <string>En curso</string>
+        </property>
+       </item>
       </widget>
      </item>
-     <item row="5" column="0">
-      <widget class="QLabel" name="labelCosto">
+     <item row="7" column="0">
+      <widget class="QLabel" name="labelPrioridad">
        <property name="text">
-        <string>Costo</string>
+        <string>Prioridad</string>
        </property>
       </widget>
      </item>
-     <item row="5" column="1">
-      <widget class="QLineEdit" name="inputCosto">
-       <property name="placeholderText">
-        <string>0.00</string>
+     <item row="7" column="1">
+      <widget class="QComboBox" name="comboPrioridad">
+       <item>
+        <property name="text">
+         <string>Baja</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Normal</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Alta</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item row="8" column="0">
+      <widget class="QLabel" name="labelManoObra">
+       <property name="text">
+        <string>Costo mano de obra</string>
        </property>
       </widget>
+     </item>
+     <item row="8" column="1">
+      <widget class="QDoubleSpinBox" name="doubleSpinBoxManoObra">
+       <property name="minimum">
+        <double>0.0</double>
+       </property>
+       <property name="maximum">
+        <double>999999999.0</double>
+       </property>
+       <property name="decimals">
+        <number>2</number>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="0">
+      <widget class="QLabel" name="labelCostoPiezas">
+       <property name="text">
+        <string>Costo piezas</string>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="1">
+      <widget class="QDoubleSpinBox" name="doubleSpinBoxCostoPiezas">
+       <property name="minimum">
+        <double>0.0</double>
+       </property>
+       <property name="maximum">
+        <double>999999999.0</double>
+       </property>
+       <property name="decimals">
+        <number>2</number>
+       </property>
+      </widget>
+     </item>
+     <item row="10" column="0">
+      <widget class="QLabel" name="labelDeposito">
+       <property name="text">
+        <string>Depósito</string>
+       </property>
+      </widget>
+     </item>
+     <item row="10" column="1">
+      <widget class="QDoubleSpinBox" name="doubleSpinBoxDeposito">
+       <property name="minimum">
+        <double>0.0</double>
+       </property>
+       <property name="maximum">
+        <double>999999999.0</double>
+       </property>
+       <property name="decimals">
+        <number>2</number>
+       </property>
+      </widget>
+     </item>
+     <item row="11" column="0">
+      <widget class="QLabel" name="labelTotal">
+       <property name="text">
+        <string>Total</string>
+       </property>
+      </widget>
+     </item>
+     <item row="11" column="1">
+      <widget class="QDoubleSpinBox" name="doubleSpinBoxTotal">
+       <property name="minimum">
+        <double>0.0</double>
+       </property>
+       <property name="maximum">
+        <double>999999999.0</double>
+       </property>
+       <property name="decimals">
+        <number>2</number>
+       </property>
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="12" column="0">
+      <widget class="QLabel" name="labelSaldo">
+       <property name="text">
+        <string>Saldo</string>
+       </property>
+      </widget>
+     </item>
+     <item row="12" column="1">
+      <widget class="QDoubleSpinBox" name="doubleSpinBoxSaldo">
+       <property name="minimum">
+        <double>0.0</double>
+       </property>
+       <property name="maximum">
+        <double>999999999.0</double>
+       </property>
+       <property name="decimals">
+        <number>2</number>
+       </property>
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="13" column="0">
+      <widget class="QLabel" name="labelTecnico">
+       <property name="text">
+        <string>Técnico</string>
+       </property>
+      </widget>
+     </item>
+     <item row="13" column="1">
+      <widget class="QLineEdit" name="lineEditTecnico"/>
+     </item>
+     <item row="14" column="0">
+      <widget class="QLabel" name="labelGarantia">
+       <property name="text">
+        <string>Garantía días</string>
+       </property>
+      </widget>
+     </item>
+     <item row="14" column="1">
+      <widget class="QSpinBox" name="spinBoxGarantia">
+       <property name="minimum">
+        <number>0</number>
+       </property>
+       <property name="maximum">
+        <number>9999</number>
+       </property>
+      </widget>
+     </item>
+     <item row="15" column="0">
+      <widget class="QLabel" name="labelPassBloqueo">
+       <property name="text">
+        <string>Pass bloqueo</string>
+       </property>
+      </widget>
+     </item>
+     <item row="15" column="1">
+      <widget class="QLineEdit" name="lineEditPassBloqueo">
+       <property name="echoMode">
+        <enum>QLineEdit::Password</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="16" column="0">
+      <widget class="QLabel" name="labelRespaldo">
+       <property name="text">
+        <string>Respaldo datos</string>
+       </property>
+      </widget>
+     </item>
+     <item row="16" column="1">
+      <widget class="QCheckBox" name="checkBoxRespaldo"/>
+     </item>
+     <item row="17" column="0">
+      <widget class="QLabel" name="labelAccesorios">
+       <property name="text">
+        <string>Accesorios entregados</string>
+       </property>
+      </widget>
+     </item>
+     <item row="17" column="1">
+      <widget class="QLineEdit" name="lineEditAccesorios"/>
      </item>
     </layout>
    </item>
@@ -121,3 +325,4 @@
  <resources/>
  <connections/>
 </ui>
+
