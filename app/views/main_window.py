@@ -6,12 +6,12 @@ from pathlib import Path
 from typing import Optional, Type
 
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QDialog, QMainWindow, QMessageBox, QApplication
-from PySide6.QtCore import QSettings
+from PySide6.QtWidgets import QDialog, QMainWindow, QMessageBox, QApplication, QTableWidgetItem
+from PySide6.QtCore import QSettings, Qt
 
 from app.resources import icons_rc  # noqa: F401
 from app.ui.ui_main_window import Ui_MainWindow
-from app.data import summary_service
+from app.data import db
 
 
 class MainWindow(QMainWindow):
@@ -40,9 +40,17 @@ class MainWindow(QMainWindow):
         self.ui.actionDispositivos.triggered.connect(self._open_dispositivos)
         self.ui.actionInventario.triggered.connect(self._open_inventario)
         self.ui.actionReparaciones.triggered.connect(self._open_reparaciones)
+        self.ui.actionActualizar.triggered.connect(self.refresh_all)
+
+        # Acciones rápidas
+        self.ui.btnClientes.clicked.connect(self._open_clientes)
+        self.ui.btnDispositivos.clicked.connect(self._open_dispositivos)
+        self.ui.btnInventario.clicked.connect(self._open_inventario)
+        self.ui.btnNuevaReparacion.clicked.connect(self._open_reparaciones)
+        self.ui.btnActualizar.clicked.connect(self.refresh_all)
 
         # Resumen inicial
-        self.refresh_summary()
+        self.refresh_all()
 
     def _load_dialog_class(self, base: str, class_name: str) -> Optional[Type[QDialog]]:
         """Try to import a dialog class handling plural/singular variations."""
@@ -61,8 +69,8 @@ class MainWindow(QMainWindow):
             self._no_impl('Clientes')
             return
         dlg = dlg_cls(self)
-        dlg.exec()
-        self.refresh_summary()
+        if dlg.exec() == QDialog.Accepted:
+            self.refresh_all()
 
     def _open_inventario(self):
         dlg_cls = self._load_dialog_class('inventario', 'InventarioDialog')
@@ -70,8 +78,8 @@ class MainWindow(QMainWindow):
             self._no_impl('Inventario')
             return
         dlg = dlg_cls(self)
-        dlg.exec()
-        self.refresh_summary()
+        if dlg.exec() == QDialog.Accepted:
+            self.refresh_all()
 
     def _open_reparaciones(self):
         dlg_cls = self._load_dialog_class('reparaciones', 'ReparacionesDialog')
@@ -79,8 +87,8 @@ class MainWindow(QMainWindow):
             self._no_impl('Reparaciones')
             return
         dlg = dlg_cls(self)
-        if dlg.exec():
-            self.refresh_summary()
+        if dlg.exec() == QDialog.Accepted:
+            self.refresh_all()
 
     def _open_dispositivos(self):
         dlg_cls = self._load_dialog_class('dispositivos', 'DispositivosDialog')
@@ -88,15 +96,56 @@ class MainWindow(QMainWindow):
             self._no_impl('Dispositivos')
             return
         dlg = dlg_cls(self)
-        if dlg.exec():
-            self.refresh_summary()
+        if dlg.exec() == QDialog.Accepted:
+            self.refresh_all()
+
+    def refresh_all(self):
+        self.refresh_summary()
+        self.load_low_stock()
+        self.load_recent_repairs()
+        self.statusBar().showMessage("Panel actualizado", 2500)
 
     def refresh_summary(self):
-        total_clientes, total_dispositivos, total_productos, total_reparaciones = summary_service.get_counts()
+        total_clientes, total_dispositivos, total_productos, total_reparaciones = db.get_counts()
         self._set_label_text(["label_total_clientes", "labelTotalClientes"], total_clientes)
         self._set_label_text(["label_total_dispositivos", "labelTotalDispositivos"], total_dispositivos)
         self._set_label_text(["label_total_productos", "labelTotalProductos"], total_productos)
         self._set_label_text(["label_total_reparaciones", "labelTotalReparaciones"], total_reparaciones)
+
+    def load_low_stock(self):
+        data = db.get_low_stock_products()
+        table = self.ui.tableLowStock
+        table.setRowCount(len(data))
+        table.setColumnCount(2)
+        table.setHorizontalHeaderLabels(["Producto", "Cantidad"])
+        for row, (nombre, cantidad) in enumerate(data):
+            table.setItem(row, 0, QTableWidgetItem(nombre))
+            item_qty = QTableWidgetItem(str(cantidad))
+            item_qty.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            table.setItem(row, 1, item_qty)
+        table.setSelectionBehavior(table.SelectionBehavior.SelectRows)
+        table.setAlternatingRowColors(True)
+        table.setSortingEnabled(True)
+        table.resizeColumnsToContents()
+
+    def load_recent_repairs(self):
+        data = db.get_recent_repairs()
+        table = self.ui.tableRecentRepairs
+        table.setRowCount(len(data))
+        table.setColumnCount(5)
+        table.setHorizontalHeaderLabels(["Fecha", "Cliente", "Dispositivo", "Estado", "Costo"])
+        for row, (fecha, cliente, dispositivo, estado, costo) in enumerate(data):
+            table.setItem(row, 0, QTableWidgetItem(fecha))
+            table.setItem(row, 1, QTableWidgetItem(cliente))
+            table.setItem(row, 2, QTableWidgetItem(dispositivo))
+            table.setItem(row, 3, QTableWidgetItem(estado))
+            item_cost = QTableWidgetItem(f"{costo:.2f}")
+            item_cost.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            table.setItem(row, 4, item_cost)
+        table.setSelectionBehavior(table.SelectionBehavior.SelectRows)
+        table.setAlternatingRowColors(True)
+        table.setSortingEnabled(True)
+        table.resizeColumnsToContents()
 
     def _set_label_text(self, names, value):
         for name in names:

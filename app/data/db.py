@@ -50,6 +50,7 @@ def _create_tables(conn: sqlite3.Connection) -> None:
         CREATE TABLE IF NOT EXISTS reparaciones (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             dispositivo_id INTEGER NOT NULL,
+            fecha TEXT DEFAULT CURRENT_TIMESTAMP,
             descripcion TEXT,
             costo REAL DEFAULT 0,
             estado TEXT DEFAULT 'Pendiente',
@@ -186,6 +187,14 @@ def migrate_if_needed(conn: sqlite3.Connection) -> None:
         cur.execute("UPDATE meta SET schema_version = 5")
         conn.commit()
 
+    if version < 6:
+        try:
+            cur.execute("ALTER TABLE reparaciones ADD COLUMN fecha TEXT DEFAULT CURRENT_TIMESTAMP")
+        except sqlite3.OperationalError:
+            pass
+        cur.execute("UPDATE meta SET schema_version = 6")
+        conn.commit()
+
 # API pública
 def init_db(path: str = DB_PATH) -> None:
     global DB_PATH
@@ -212,6 +221,41 @@ def contar_reparaciones_pendientes() -> int:
     cur = _ensure_conn().cursor()
     cur.execute("SELECT COUNT(*) FROM reparaciones WHERE estado = 'Pendiente'")
     return cur.fetchone()[0]
+
+
+def get_counts() -> Tuple[int, int, int, int]:
+    """Return total counts for dashboard."""
+    return (
+        contar_clientes(),
+        contar_dispositivos(),
+        contar_productos(),
+        contar_reparaciones_pendientes(),
+    )
+
+
+def get_low_stock_products(limit: int = 8) -> List[Tuple[str, int]]:
+    cur = _ensure_conn().cursor()
+    cur.execute(
+        "SELECT nombre, cantidad FROM inventario WHERE cantidad <= 1 ORDER BY cantidad ASC, nombre ASC LIMIT ?",
+        (limit,),
+    )
+    return cur.fetchall()
+
+
+def get_recent_repairs(limit: int = 8) -> List[Tuple[str, str, str, str, float]]:
+    cur = _ensure_conn().cursor()
+    cur.execute(
+        """
+        SELECT r.fecha, c.nombre, d.marca || ' ' || d.modelo, r.estado, r.total
+        FROM reparaciones r
+        JOIN dispositivos d ON r.dispositivo_id = d.id
+        JOIN clientes c ON d.cliente_id = c.id
+        ORDER BY r.fecha DESC
+        LIMIT ?
+        """,
+        (limit,),
+    )
+    return cur.fetchall()
 
 def listar_clientes():
     cur = _ensure_conn().cursor()
