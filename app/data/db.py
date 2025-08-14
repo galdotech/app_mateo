@@ -297,21 +297,33 @@ def find_device(cliente_id: int, marca: str, modelo: str, imei: Optional[str] = 
     return row[0] if row else None
 
 
-def add_device(cliente_id: int, marca: str, modelo: str, imei: Optional[str]) -> int:
+def add_device(
+    cliente_id: int,
+    marca: str,
+    modelo: str,
+    imei: Optional[str] = None,
+    n_serie: Optional[str] = None,
+    color: Optional[str] = None,
+    accesorios: Optional[str] = None,
+) -> int:
     did = find_device(cliente_id, marca, modelo, imei)
     if did is not None:
         return did
     conn = _ensure_conn()
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO dispositivos (cliente_id, marca, modelo, imei) VALUES (?, ?, ?, ?)",
-        (cliente_id, marca, modelo, imei),
+        """
+        INSERT INTO dispositivos (cliente_id, marca, modelo, imei, n_serie, color, accesorios)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (cliente_id, marca, modelo, imei, n_serie, color, accesorios),
     )
     conn.commit()
     return cur.lastrowid
 
 
 def listar_dispositivos() -> List[Tuple[int, int, str, str, str, Optional[str]]]:
+    """Compat helper retaining legacy API."""
     cur = _ensure_conn().cursor()
     cur.execute(
         """
@@ -319,25 +331,41 @@ def listar_dispositivos() -> List[Tuple[int, int, str, str, str, Optional[str]]]
         FROM dispositivos d
         JOIN clientes c ON d.cliente_id = c.id
         ORDER BY d.id
-        """
+        """,
     )
     return cur.fetchall()
 
 
-def update_device(device_id: int, *, marca: Optional[str] = None, modelo: Optional[str] = None, imei: Optional[str] = None) -> bool:
-    if marca is None and modelo is None and imei is None:
+def listar_dispositivos_detallado() -> List[
+    Tuple[int, int, str, Optional[str], Optional[str], Optional[str], Optional[str], Optional[str], Optional[str]]
+]:
+    cur = _ensure_conn().cursor()
+    cur.execute(
+        """
+        SELECT d.id, d.cliente_id, c.nombre, d.marca, d.modelo, d.imei, d.n_serie, d.color, d.accesorios
+        FROM dispositivos d
+        JOIN clientes c ON d.cliente_id = c.id
+        ORDER BY d.id
+        """,
+    )
+    return cur.fetchall()
+
+
+
+
+def update_device(device_id: int, **campos) -> bool:
+    if not campos:
         return False
-    fields = []
+    allowed = {"marca", "modelo", "imei", "n_serie", "color", "pin", "patron", "accesorios"}
+    fields: List[str] = []
     params: List[object] = []
-    if marca is not None:
-        fields.append("marca = ?")
-        params.append(marca)
-    if modelo is not None:
-        fields.append("modelo = ?")
-        params.append(modelo)
-    if imei is not None:
-        fields.append("imei = ?")
-        params.append(imei)
+    for key, value in campos.items():
+        if key not in allowed:
+            continue
+        fields.append(f"{key} = ?")
+        params.append(value)
+    if not fields:
+        return False
     params.append(device_id)
     conn = _ensure_conn()
     cur = conn.cursor()
@@ -356,7 +384,7 @@ def delete_device(device_id: int) -> bool:
 
 def add_repair(cliente_nombre: str, marca: str, modelo: str, descripcion: str, costo: float, estado: str) -> int:
     cid = add_client(cliente_nombre)
-    did = add_device(cid, marca, modelo, None)
+    did = add_device(cid, marca, modelo, None, None, None, None)
     conn = _ensure_conn()
     cur = conn.cursor()
     cur.execute(

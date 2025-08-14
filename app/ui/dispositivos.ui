@@ -14,11 +14,20 @@
      <item>
       <widget class="QLineEdit" name="lineEditMarca"/>
      </item>
-     <item>
+    <item>
       <widget class="QLineEdit" name="lineEditModelo"/>
      </item>
      <item>
       <widget class="QLineEdit" name="lineEditIMEI"/>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="lineEditSerie"/>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="lineEditColor"/>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="lineEditAccesorios"/>
      </item>
      <item>
       <widget class="QPushButton" name="btnAgregar">
@@ -32,7 +41,7 @@
    <item>
     <widget class="QTableWidget" name="tableDispositivos">
      <property name="columnCount">
-      <number>4</number>
+      <number>7</number>
      </property>
      <property name="selectionBehavior">
       <enum>QAbstractItemView::SelectRows</enum>
@@ -55,6 +64,21 @@
      <column>
       <property name="text">
        <string>IMEI</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Nº Serie</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Color</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Accesorios</string>
       </property>
      </column>
     </widget>
