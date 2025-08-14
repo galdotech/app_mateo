@@ -1,10 +1,18 @@
 # -*- coding: utf-8 -*-
-from PySide6.QtWidgets import QDialog, QMessageBox, QTableWidgetItem
-from PySide6.QtGui import QRegularExpressionValidator
-from PySide6.QtCore import QRegularExpression
+from PySide6.QtWidgets import (
+    QDialog,
+    QMessageBox,
+    QLineEdit,
+    QPushButton,
+    QHBoxLayout,
+    QLabel,
+)
+from PySide6.QtGui import QRegularExpressionValidator, QStandardItemModel, QStandardItem
+from PySide6.QtCore import QRegularExpression, Qt
 
 from app.ui.ui_clientes import Ui_ClientesDialog
 from app.data import db
+from .filter_proxy import MultiFilterProxyModel
 
 
 class ClientesDialog(QDialog):
@@ -22,18 +30,55 @@ class ClientesDialog(QDialog):
         self.ui.btnGuardar.clicked.connect(self.guardar_cambios)
         self.ui.btnEliminar.clicked.connect(self.eliminar)
         self.ui.btnCerrar.clicked.connect(self.close)
-        self.ui.tableClientes.itemSelectionChanged.connect(self.cargar_seleccion)
+
+        # Model + proxy for filtering
+        self.model = QStandardItemModel(0, 4, self)
+        self.model.setHorizontalHeaderLabels(["ID", "Nombre", "Teléfono", "Email"])
+        self.proxy = MultiFilterProxyModel(self)
+        self.proxy.setSourceModel(self.model)
+        self.ui.tableClientes.setModel(self.proxy)
+        self.ui.tableClientes.setSortingEnabled(True)
+        self.ui.tableClientes.selectionModel().selectionChanged.connect(
+            lambda *_: self.cargar_seleccion()
+        )
+
+        self._setup_filters()
 
         self._clientes = {}
         self._load_clientes()
 
+    def _setup_filters(self) -> None:
+        layout = QHBoxLayout()
+        self.filter_name = QLineEdit(self)
+        self.filter_phone = QLineEdit(self)
+        self.filter_email = QLineEdit(self)
+        self.btn_clear = QPushButton("Limpiar filtros", self)
+
+        layout.addWidget(QLabel("Nombre:"))
+        layout.addWidget(self.filter_name)
+        layout.addWidget(QLabel("Teléfono:"))
+        layout.addWidget(self.filter_phone)
+        layout.addWidget(QLabel("Email:"))
+        layout.addWidget(self.filter_email)
+        layout.addWidget(self.btn_clear)
+
+        self.ui.verticalLayout.insertLayout(2, layout)
+
+        self.filter_name.textChanged.connect(lambda text: self.proxy.setFilterForColumn(1, text))
+        self.filter_phone.textChanged.connect(lambda text: self.proxy.setFilterForColumn(2, text))
+        self.filter_email.textChanged.connect(lambda text: self.proxy.setFilterForColumn(3, text))
+        self.btn_clear.clicked.connect(self._clear_filters)
+
+    def _clear_filters(self) -> None:
+        self.filter_name.clear()
+        self.filter_phone.clear()
+        self.filter_email.clear()
+        self.proxy.clearFilters()
+
     def _load_clientes(self) -> None:
-        table = self.ui.tableClientes
-        table.setRowCount(0)
+        self.model.setRowCount(0)
         self._clientes = {}
-        for row, (cid, nombre, telefono, email, direccion, nif, notas) in enumerate(
-            db.listar_clientes_detallado()
-        ):
+        for cid, nombre, telefono, email, direccion, nif, notas in db.listar_clientes_detallado():
             self._clientes[cid] = {
                 "nombre": nombre or "",
                 "telefono": telefono or "",
@@ -42,12 +87,14 @@ class ClientesDialog(QDialog):
                 "nif": nif or "",
                 "notas": notas or "",
             }
-            table.insertRow(row)
-            table.setItem(row, 0, QTableWidgetItem(str(cid)))
-            table.setItem(row, 1, QTableWidgetItem(nombre or ""))
-            table.setItem(row, 2, QTableWidgetItem(telefono or ""))
-            table.setItem(row, 3, QTableWidgetItem(email or ""))
-        table.resizeColumnsToContents()
+            row = [
+                QStandardItem(str(cid)),
+                QStandardItem(nombre or ""),
+                QStandardItem(telefono or ""),
+                QStandardItem(email or ""),
+            ]
+            self.model.appendRow(row)
+        self.ui.tableClientes.resizeColumnsToContents()
 
     def _clear_form(self) -> None:
         self.ui.lineEditNombre.clear()
@@ -88,11 +135,12 @@ class ClientesDialog(QDialog):
         self._load_clientes()
 
     def cargar_seleccion(self) -> None:
-        row = self.ui.tableClientes.currentRow()
-        if row < 0:
+        index = self.ui.tableClientes.currentIndex()
+        if not index.isValid():
             return
-        cid_item = self.ui.tableClientes.item(row, 0)
-        if not cid_item:
+        source = self.proxy.mapToSource(index)
+        cid_item = self.model.item(source.row(), 0)
+        if cid_item is None:
             return
         cid = int(cid_item.text())
         cliente = self._clientes.get(cid)
@@ -106,12 +154,12 @@ class ClientesDialog(QDialog):
         self.ui.plainTextEditNotas.setPlainText(cliente["notas"])
 
     def guardar_cambios(self) -> None:
-        row = self.ui.tableClientes.currentRow()
-        if row < 0:
+        index = self.ui.tableClientes.currentIndex()
+        if not index.isValid():
             QMessageBox.warning(self, "Guardar", "Seleccione un cliente.")
             return
-        cid_item = self.ui.tableClientes.item(row, 0)
-        if not cid_item:
+        cid_item = self.model.item(self.proxy.mapToSource(index).row(), 0)
+        if cid_item is None:
             return
         cid = int(cid_item.text())
 
@@ -145,14 +193,14 @@ class ClientesDialog(QDialog):
         self._load_clientes()
 
     def eliminar(self) -> None:
-        row = self.ui.tableClientes.currentRow()
-        if row < 0:
+        index = self.ui.tableClientes.currentIndex()
+        if not index.isValid():
             QMessageBox.warning(self, "Eliminar", "Seleccione un cliente.")
             return
-        id_item = self.ui.tableClientes.item(row, 0)
-        if not id_item:
+        cid_item = self.model.item(self.proxy.mapToSource(index).row(), 0)
+        if cid_item is None:
             return
-        cid = int(id_item.text())
+        cid = int(cid_item.text())
         if QMessageBox.question(self, "Confirmar", "¿Eliminar cliente seleccionado?") == QMessageBox.Yes:
             db.delete_cliente(cid)
             self._clear_form()

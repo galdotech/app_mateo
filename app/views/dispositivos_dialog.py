@@ -1,9 +1,18 @@
 # -*- coding: utf-8 -*-
-from PySide6.QtWidgets import QDialog, QMessageBox, QTableWidgetItem
+from PySide6.QtWidgets import (
+    QDialog,
+    QMessageBox,
+    QLineEdit,
+    QPushButton,
+    QHBoxLayout,
+    QLabel,
+)
+from PySide6.QtGui import QStandardItemModel, QStandardItem
 from PySide6.QtCore import Qt
 
 from app.ui.ui_dispositivos import Ui_DispositivosDialog
 from app.data import db
+from .filter_proxy import MultiFilterProxyModel
 
 
 class DispositivosDialog(QDialog):
@@ -18,7 +27,25 @@ class DispositivosDialog(QDialog):
         self.ui.btnAgregar.clicked.connect(self.agregar)
         self.ui.btnEliminar.clicked.connect(self.eliminar)
         self.ui.btnCerrar.clicked.connect(self.cerrar)
-        self.ui.tableDispositivos.itemChanged.connect(self._item_changed)
+
+        # Model + proxy
+        self.model = QStandardItemModel(0, 7, self)
+        self.model.setHorizontalHeaderLabels([
+            "Cliente",
+            "Marca",
+            "Modelo",
+            "IMEI",
+            "N° Serie",
+            "Color",
+            "Accesorios",
+        ])
+        self.model.itemChanged.connect(self._item_changed)
+        self.proxy = MultiFilterProxyModel(self)
+        self.proxy.setSourceModel(self.model)
+        self.ui.tableDispositivos.setModel(self.proxy)
+        self.ui.tableDispositivos.setSortingEnabled(True)
+
+        self._setup_filters()
 
         self._load_clientes()
         self._load_dispositivos()
@@ -29,12 +56,44 @@ class DispositivosDialog(QDialog):
         for cid, nombre in db.listar_clientes():
             combo.addItem(nombre, cid)
 
+    def _setup_filters(self) -> None:
+        layout = QHBoxLayout()
+        self.filter_cliente = QLineEdit(self)
+        self.filter_marca = QLineEdit(self)
+        self.filter_modelo = QLineEdit(self)
+        self.filter_imei = QLineEdit(self)
+        self.btn_clear = QPushButton("Limpiar filtros", self)
+
+        layout.addWidget(QLabel("Cliente:"))
+        layout.addWidget(self.filter_cliente)
+        layout.addWidget(QLabel("Marca:"))
+        layout.addWidget(self.filter_marca)
+        layout.addWidget(QLabel("Modelo:"))
+        layout.addWidget(self.filter_modelo)
+        layout.addWidget(QLabel("IMEI:"))
+        layout.addWidget(self.filter_imei)
+        layout.addWidget(self.btn_clear)
+
+        self.ui.verticalLayout.insertLayout(1, layout)
+
+        self.filter_cliente.textChanged.connect(lambda text: self.proxy.setFilterForColumn(0, text))
+        self.filter_marca.textChanged.connect(lambda text: self.proxy.setFilterForColumn(1, text))
+        self.filter_modelo.textChanged.connect(lambda text: self.proxy.setFilterForColumn(2, text))
+        self.filter_imei.textChanged.connect(lambda text: self.proxy.setFilterForColumn(3, text))
+        self.btn_clear.clicked.connect(self._clear_filters)
+
+    def _clear_filters(self) -> None:
+        self.filter_cliente.clear()
+        self.filter_marca.clear()
+        self.filter_modelo.clear()
+        self.filter_imei.clear()
+        self.proxy.clearFilters()
+
     def _load_dispositivos(self):
         self._updating = True
-        table = self.ui.tableDispositivos
-        table.blockSignals(True)
-        table.setRowCount(0)
-        for row, (
+        self.model.blockSignals(True)
+        self.model.setRowCount(0)
+        for (
             did,
             cid,
             cname,
@@ -44,27 +103,22 @@ class DispositivosDialog(QDialog):
             n_serie,
             color,
             accesorios,
-        ) in enumerate(db.listar_dispositivos_detallado()):
-            table.insertRow(row)
-            cliente_item = QTableWidgetItem(cname)
-            cliente_item.setFlags(cliente_item.flags() & ~Qt.ItemIsEditable)
-            marca_item = QTableWidgetItem(marca or "")
-            marca_item.setData(Qt.UserRole, did)
-            marca_item.setFlags(marca_item.flags() & ~Qt.ItemIsEditable)
-            modelo_item = QTableWidgetItem(modelo or "")
-            imei_item = QTableWidgetItem(imei or "")
-            serie_item = QTableWidgetItem(n_serie or "")
-            color_item = QTableWidgetItem(color or "")
-            accesorios_item = QTableWidgetItem(accesorios or "")
-            table.setItem(row, 0, cliente_item)
-            table.setItem(row, 1, marca_item)
-            table.setItem(row, 2, modelo_item)
-            table.setItem(row, 3, imei_item)
-            table.setItem(row, 4, serie_item)
-            table.setItem(row, 5, color_item)
-            table.setItem(row, 6, accesorios_item)
-        table.resizeColumnsToContents()
-        table.blockSignals(False)
+        ) in db.listar_dispositivos_detallado():
+            row = [
+                QStandardItem(cname),
+                QStandardItem(marca or ""),
+                QStandardItem(modelo or ""),
+                QStandardItem(imei or ""),
+                QStandardItem(n_serie or ""),
+                QStandardItem(color or ""),
+                QStandardItem(accesorios or ""),
+            ]
+            row[0].setEditable(False)
+            row[1].setEditable(False)
+            row[1].setData(did, Qt.UserRole)
+            self.model.appendRow(row)
+        self.ui.tableDispositivos.resizeColumnsToContents()
+        self.model.blockSignals(False)
         self._updating = False
 
     def agregar(self):
@@ -103,16 +157,16 @@ class DispositivosDialog(QDialog):
         if self._updating or item.column() not in (2, 3, 4, 5, 6):
             return
         row = item.row()
-        marca_item = self.ui.tableDispositivos.item(row, 1)
+        marca_item = self.model.item(row, 1)
         did = marca_item.data(Qt.UserRole)
-        modelo = self.ui.tableDispositivos.item(row, 2).text().strip()
-        imei_item = self.ui.tableDispositivos.item(row, 3)
+        modelo = self.model.item(row, 2).text().strip()
+        imei_item = self.model.item(row, 3)
         imei = imei_item.text().strip() if imei_item else ""
-        serie_item = self.ui.tableDispositivos.item(row, 4)
+        serie_item = self.model.item(row, 4)
         n_serie = serie_item.text().strip() if serie_item else ""
-        color_item = self.ui.tableDispositivos.item(row, 5)
+        color_item = self.model.item(row, 5)
         color = color_item.text().strip() if color_item else ""
-        accesorios_item = self.ui.tableDispositivos.item(row, 6)
+        accesorios_item = self.model.item(row, 6)
         accesorios = accesorios_item.text().strip() if accesorios_item else ""
         if not modelo:
             QMessageBox.warning(self, "Validación", "Modelo no puede estar vacío.")
@@ -129,11 +183,12 @@ class DispositivosDialog(QDialog):
         self._changed = True
 
     def eliminar(self):
-        row = self.ui.tableDispositivos.currentRow()
-        if row < 0:
+        index = self.ui.tableDispositivos.currentIndex()
+        if not index.isValid():
             QMessageBox.warning(self, "Eliminar", "Seleccione un dispositivo.")
             return
-        marca_item = self.ui.tableDispositivos.item(row, 1)
+        source = self.proxy.mapToSource(index)
+        marca_item = self.model.item(source.row(), 1)
         did = marca_item.data(Qt.UserRole)
         if QMessageBox.question(self, "Confirmar", "¿Eliminar dispositivo seleccionado?") == QMessageBox.Yes:
             db.delete_device(did)
