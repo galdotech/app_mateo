@@ -17,35 +17,36 @@ def _ensure_conn() -> sqlite3.Connection:
 def _create_tables(conn: sqlite3.Connection) -> None:
     cur = conn.cursor()
     # Tablas mínimas
-    cur.execute("""
+    cur.execute(
+        """
         CREATE TABLE IF NOT EXISTS clientes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre TEXT NOT NULL
         )
-    """)
-    cur.execute("""
+        """
+    )
+    cur.execute(
+        """
         CREATE TABLE IF NOT EXISTS dispositivos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             cliente_id INTEGER NOT NULL,
             marca TEXT,
             modelo TEXT,
-            imei TEXT,
             FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
         )
-    """)
-    # Ensure column 'imei' exists
-    cur.execute("PRAGMA table_info(dispositivos)")
-    cols = [row[1] for row in cur.fetchall()]
-    if "imei" not in cols:
-        cur.execute("ALTER TABLE dispositivos ADD COLUMN imei TEXT")
-    cur.execute("""
+        """
+    )
+    cur.execute(
+        """
         CREATE TABLE IF NOT EXISTS inventario (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre TEXT NOT NULL,
             cantidad INTEGER DEFAULT 0
         )
-    """)
-    cur.execute("""
+        """
+    )
+    cur.execute(
+        """
         CREATE TABLE IF NOT EXISTS reparaciones (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             dispositivo_id INTEGER NOT NULL,
@@ -54,19 +55,139 @@ def _create_tables(conn: sqlite3.Connection) -> None:
             estado TEXT DEFAULT 'Pendiente',
             FOREIGN KEY (dispositivo_id) REFERENCES dispositivos(id) ON DELETE CASCADE
         )
-    """)
-    # Ensure column 'costo' exists
-    cur.execute("PRAGMA table_info(reparaciones)")
-    cols = [row[1] for row in cur.fetchall()]
-    if "costo" not in cols:
-        cur.execute("ALTER TABLE reparaciones ADD COLUMN costo REAL DEFAULT 0")
+        """
+    )
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS meta (
+            schema_version INTEGER NOT NULL
+        )
+        """
+    )
+    cur.execute("SELECT COUNT(*) FROM meta")
+    if cur.fetchone()[0] == 0:
+        cur.execute("INSERT INTO meta(schema_version) VALUES (1)")
+
+    # Índices
+    try:
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_clientes_nombre ON clientes(nombre)")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_dispositivos_cliente ON dispositivos(cliente_id)")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_inventario_nombre ON inventario(nombre)")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_reparaciones_estado ON reparaciones(estado)")
+    except sqlite3.OperationalError:
+        pass
+
     conn.commit()
+
+
+def migrate_if_needed(conn: sqlite3.Connection) -> None:
+    cur = conn.cursor()
+    # Asegura tabla meta y versión inicial
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS meta (
+            schema_version INTEGER NOT NULL
+        )
+        """
+    )
+    cur.execute("SELECT COUNT(*) FROM meta")
+    if cur.fetchone()[0] == 0:
+        cur.execute("INSERT INTO meta(schema_version) VALUES (1)")
+        conn.commit()
+
+    cur.execute("SELECT schema_version FROM meta")
+    version = cur.fetchone()[0]
+
+    if version < 2:
+        for column in [
+            "telefono TEXT",
+            "email TEXT",
+            "direccion TEXT",
+            "nif TEXT",
+            "notas TEXT",
+        ]:
+            try:
+                cur.execute(f"ALTER TABLE clientes ADD COLUMN {column}")
+            except sqlite3.OperationalError:
+                pass
+        cur.execute("UPDATE meta SET schema_version = 2")
+        conn.commit()
+        version = 2
+
+    if version < 3:
+        for column in [
+            "imei TEXT",
+            "n_serie TEXT",
+            "color TEXT",
+            "pin TEXT",
+            "patron TEXT",
+            "accesorios TEXT",
+        ]:
+            try:
+                cur.execute(f"ALTER TABLE dispositivos ADD COLUMN {column}")
+            except sqlite3.OperationalError:
+                pass
+        cur.execute("UPDATE meta SET schema_version = 3")
+        conn.commit()
+        version = 3
+
+    if version < 4:
+        for column in [
+            "sku TEXT",
+            "categoria TEXT",
+            "costo REAL DEFAULT 0",
+            "precio REAL DEFAULT 0",
+            "stock_min INTEGER DEFAULT 0",
+            "ubicacion TEXT",
+            "proveedor TEXT",
+            "notas TEXT",
+        ]:
+            try:
+                cur.execute(f"ALTER TABLE inventario ADD COLUMN {column}")
+            except sqlite3.OperationalError:
+                pass
+        cur.execute("UPDATE meta SET schema_version = 4")
+        conn.commit()
+        version = 4
+
+    if version < 5:
+        for column in [
+            "diagnostico TEXT",
+            "acciones TEXT",
+            "piezas_usadas TEXT",
+            "costo_mano_obra REAL DEFAULT 0",
+            "deposito_pagado REAL DEFAULT 0",
+            "total REAL DEFAULT 0",
+            "saldo REAL DEFAULT 0",
+            "prioridad TEXT DEFAULT 'Normal'",
+            "tecnico TEXT",
+            "garantia_dias INTEGER DEFAULT 0",
+            "pass_bloqueo TEXT",
+            "respaldo_datos INTEGER DEFAULT 0",
+            "accesorios_entregados TEXT",
+        ]:
+            try:
+                cur.execute(f"ALTER TABLE reparaciones ADD COLUMN {column}")
+            except sqlite3.OperationalError:
+                pass
+        cur.execute("UPDATE meta SET schema_version = 5")
+        conn.commit()
 
 # API pública
 def init_db(path: str = DB_PATH) -> None:
     global DB_PATH
     DB_PATH = path
-    _ensure_conn()
+    conn = _ensure_conn()
+    migrate_if_needed(conn)
 
 def contar_clientes() -> int:
     cur = _ensure_conn().cursor()
