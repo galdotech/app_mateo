@@ -82,6 +82,10 @@ def _create_tables(conn: sqlite3.Connection) -> None:
     except sqlite3.OperationalError:
         pass
     try:
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_inventario_sku ON inventario(sku)")
+    except sqlite3.OperationalError:
+        pass
+    try:
         cur.execute("CREATE INDEX IF NOT EXISTS idx_reparaciones_estado ON reparaciones(estado)")
     except sqlite3.OperationalError:
         pass
@@ -446,5 +450,111 @@ def delete_product(product_id: int) -> bool:
     conn = _ensure_conn()
     cur = conn.cursor()
     cur.execute("DELETE FROM inventario WHERE id = ?", (product_id,))
+    conn.commit()
+    return cur.rowcount > 0
+
+
+def listar_productos_detallado() -> List[
+    Tuple[
+        int,
+        Optional[str],
+        str,
+        Optional[str],
+        int,
+        int,
+        float,
+        float,
+        Optional[str],
+        Optional[str],
+        Optional[str],
+    ]
+]:
+    cur = _ensure_conn().cursor()
+    cur.execute(
+        """
+        SELECT id, sku, nombre, categoria, cantidad, stock_min, costo, precio, ubicacion, proveedor, notas
+        FROM inventario
+        ORDER BY id
+        """
+    )
+    return cur.fetchall()
+
+
+def add_product_ext(
+    sku: Optional[str],
+    nombre: str,
+    categoria: Optional[str],
+    cantidad: int,
+    stock_min: int,
+    costo: float,
+    precio: float,
+    ubicacion: Optional[str],
+    proveedor: Optional[str],
+    notas: Optional[str],
+) -> Optional[int]:
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    if sku:
+        cur.execute("SELECT id FROM inventario WHERE sku = ?", (sku,))
+        if cur.fetchone():
+            return None
+    cur.execute(
+        """
+        INSERT INTO inventario (sku, nombre, categoria, cantidad, stock_min, costo, precio, ubicacion, proveedor, notas)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            sku or None,
+            nombre,
+            categoria or None,
+            cantidad,
+            stock_min,
+            costo,
+            precio,
+            ubicacion or None,
+            proveedor or None,
+            notas or None,
+        ),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def update_product_ext(product_id: int, **campos) -> bool:
+    if not campos:
+        return False
+    allowed = {
+        "sku",
+        "nombre",
+        "categoria",
+        "cantidad",
+        "stock_min",
+        "costo",
+        "precio",
+        "ubicacion",
+        "proveedor",
+        "notas",
+    }
+    fields: List[str] = []
+    params: List[object] = []
+    if "sku" in campos and campos["sku"]:
+        cur = _ensure_conn().cursor()
+        cur.execute(
+            "SELECT id FROM inventario WHERE sku = ? AND id != ?",
+            (campos["sku"], product_id),
+        )
+        if cur.fetchone():
+            return False
+    for key, value in campos.items():
+        if key not in allowed:
+            continue
+        fields.append(f"{key} = ?")
+        params.append(value)
+    if not fields:
+        return False
+    params.append(product_id)
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute(f"UPDATE inventario SET {', '.join(fields)} WHERE id = ?", params)
     conn.commit()
     return cur.rowcount > 0

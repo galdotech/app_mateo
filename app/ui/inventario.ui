@@ -7,18 +7,61 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <layout class="QHBoxLayout" name="layoutInputs">
-     <item>
+    <layout class="QGridLayout" name="layoutInputs">
+     <item row="0" column="0">
+      <widget class="QLineEdit" name="lineEditSKU"/>
+     </item>
+     <item row="0" column="1">
       <widget class="QLineEdit" name="lineEditNombre"/>
      </item>
-     <item>
+     <item row="0" column="2">
+      <widget class="QComboBox" name="comboCategoria">
+       <property name="editable">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="3">
       <widget class="QSpinBox" name="spinCantidad">
        <property name="minimum">
         <number>0</number>
        </property>
       </widget>
      </item>
-     <item>
+     <item row="0" column="4">
+      <widget class="QSpinBox" name="spinStockMin">
+       <property name="minimum">
+        <number>0</number>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QDoubleSpinBox" name="doubleCosto">
+       <property name="decimals">
+        <number>2</number>
+       </property>
+       <property name="minimum">
+        <double>0.0</double>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QDoubleSpinBox" name="doublePrecio">
+       <property name="decimals">
+        <number>2</number>
+       </property>
+       <property name="minimum">
+        <double>0.0</double>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="2">
+      <widget class="QLineEdit" name="lineUbicacion"/>
+     </item>
+     <item row="1" column="3">
+      <widget class="QLineEdit" name="lineProveedor"/>
+     </item>
+     <item row="1" column="4">
       <widget class="QPushButton" name="btnAgregar">
        <property name="text">
         <string>Agregar</string>
@@ -30,11 +73,16 @@
    <item>
     <widget class="QTableWidget" name="tableProductos">
      <property name="columnCount">
-      <number>2</number>
+      <number>9</number>
      </property>
      <property name="selectionBehavior">
       <enum>QAbstractItemView::SelectRows</enum>
      </property>
+     <column>
+      <property name="text">
+       <string>SKU</string>
+      </property>
+     </column>
      <column>
       <property name="text">
        <string>Nombre</string>
@@ -42,7 +90,37 @@
      </column>
      <column>
       <property name="text">
+       <string>Categoría</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
        <string>Cantidad</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Stock Mín.</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Costo</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Precio</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Ubicación</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Proveedor</string>
       </property>
      </column>
     </widget>
