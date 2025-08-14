@@ -48,6 +48,21 @@ class Ui_DispositivosDialog(object):
 
         self.layoutInputs.addWidget(self.lineEditIMEI)
 
+        self.lineEditSerie = QLineEdit(DispositivosDialog)
+        self.lineEditSerie.setObjectName(u"lineEditSerie")
+
+        self.layoutInputs.addWidget(self.lineEditSerie)
+
+        self.lineEditColor = QLineEdit(DispositivosDialog)
+        self.lineEditColor.setObjectName(u"lineEditColor")
+
+        self.layoutInputs.addWidget(self.lineEditColor)
+
+        self.lineEditAccesorios = QLineEdit(DispositivosDialog)
+        self.lineEditAccesorios.setObjectName(u"lineEditAccesorios")
+
+        self.layoutInputs.addWidget(self.lineEditAccesorios)
+
         self.btnAgregar = QPushButton(DispositivosDialog)
         self.btnAgregar.setObjectName(u"btnAgregar")
 
@@ -57,8 +72,8 @@ class Ui_DispositivosDialog(object):
         self.verticalLayout.addLayout(self.layoutInputs)
 
         self.tableDispositivos = QTableWidget(DispositivosDialog)
-        if (self.tableDispositivos.columnCount() < 4):
-            self.tableDispositivos.setColumnCount(4)
+        if (self.tableDispositivos.columnCount() < 7):
+            self.tableDispositivos.setColumnCount(7)
         __qtablewidgetitem = QTableWidgetItem()
         self.tableDispositivos.setHorizontalHeaderItem(0, __qtablewidgetitem)
         __qtablewidgetitem1 = QTableWidgetItem()
@@ -67,8 +82,14 @@ class Ui_DispositivosDialog(object):
         self.tableDispositivos.setHorizontalHeaderItem(2, __qtablewidgetitem2)
         __qtablewidgetitem3 = QTableWidgetItem()
         self.tableDispositivos.setHorizontalHeaderItem(3, __qtablewidgetitem3)
+        __qtablewidgetitem4 = QTableWidgetItem()
+        self.tableDispositivos.setHorizontalHeaderItem(4, __qtablewidgetitem4)
+        __qtablewidgetitem5 = QTableWidgetItem()
+        self.tableDispositivos.setHorizontalHeaderItem(5, __qtablewidgetitem5)
+        __qtablewidgetitem6 = QTableWidgetItem()
+        self.tableDispositivos.setHorizontalHeaderItem(6, __qtablewidgetitem6)
         self.tableDispositivos.setObjectName(u"tableDispositivos")
-        self.tableDispositivos.setColumnCount(4)
+        self.tableDispositivos.setColumnCount(7)
         self.tableDispositivos.setSelectionBehavior(QAbstractItemView.SelectRows)
 
         self.verticalLayout.addWidget(self.tableDispositivos)
@@ -109,6 +130,12 @@ class Ui_DispositivosDialog(object):
         ___qtablewidgetitem2.setText(QCoreApplication.translate("DispositivosDialog", u"Modelo", None));
         ___qtablewidgetitem3 = self.tableDispositivos.horizontalHeaderItem(3)
         ___qtablewidgetitem3.setText(QCoreApplication.translate("DispositivosDialog", u"IMEI", None));
+        ___qtablewidgetitem4 = self.tableDispositivos.horizontalHeaderItem(4)
+        ___qtablewidgetitem4.setText(QCoreApplication.translate("DispositivosDialog", u"N\u00ba Serie", None));
+        ___qtablewidgetitem5 = self.tableDispositivos.horizontalHeaderItem(5)
+        ___qtablewidgetitem5.setText(QCoreApplication.translate("DispositivosDialog", u"Color", None));
+        ___qtablewidgetitem6 = self.tableDispositivos.horizontalHeaderItem(6)
+        ___qtablewidgetitem6.setText(QCoreApplication.translate("DispositivosDialog", u"Accesorios", None));
         self.btnEliminar.setText(QCoreApplication.translate("DispositivosDialog", u"Eliminar", None))
         self.btnCerrar.setText(QCoreApplication.translate("DispositivosDialog", u"Cerrar", None))
     # retranslateUi
