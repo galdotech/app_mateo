@@ -1,9 +1,0 @@
-<RCC>
-  <qresource prefix="/icons">
-    <file alias="clients.svg">icons/clients.svg</file>
-    <file alias="devices.svg">icons/devices.svg</file>
-    <file alias="inventory.svg">icons/inventory.svg</file>
-    <file alias="repairs.svg">icons/repairs.svg</file>
-    <file alias="exit.svg">icons/exit.svg</file>
-  </qresource>
-</RCC>

@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-from PySide6.QtWidgets import QDialog, QMessageBox
+from PySide6.QtWidgets import QDialog, QMessageBox, QMainWindow
+from PySide6.QtGui import QIcon
+
+from app.resources import icons_rc  # noqa: F401
 
 from app.ui.ui_reparaciones import Ui_ReparacionesDialog
 from app.data import db
@@ -10,6 +13,10 @@ class ReparacionesDialog(QDialog):
         super().__init__(parent)
         self.ui = Ui_ReparacionesDialog()
         self.ui.setupUi(self)
+
+        self.setWindowIcon(QIcon(":/icons/wrench.svg"))
+        self._set_button_icon(self.ui.btnGuardar, ":/icons/wrench.svg")
+        self._set_button_icon(self.ui.btnCancelar, ":/icons/exit.svg")
 
         # Totals are recalculated whenever related values change
         for widget in (
@@ -25,6 +32,21 @@ class ReparacionesDialog(QDialog):
 
         self.ui.btnGuardar.clicked.connect(self._guardar)
         self.ui.btnCancelar.clicked.connect(self.reject)
+
+    def _set_button_icon(self, btn, resource):
+        icon = QIcon(resource)
+        if not icon.isNull():
+            btn.setIcon(icon)
+
+    def _show_status(self, text: str) -> None:
+        parent = self.parent()
+        if isinstance(parent, QMainWindow):
+            parent.statusBar().showMessage(text, 3000)
+
+    def _set_error(self, widget, state: bool) -> None:
+        widget.setProperty("error", state)
+        widget.style().unpolish(widget)
+        widget.style().polish(widget)
 
     def _guardar(self):
         cliente = self.ui.lineEditCliente.text().strip()
@@ -46,8 +68,14 @@ class ReparacionesDialog(QDialog):
         accesorios = self.ui.lineEditAccesorios.text().strip()
 
         if not cliente or not marca or not modelo:
+            self._set_error(self.ui.lineEditCliente, not cliente)
+            self._set_error(self.ui.lineEditMarca, not marca)
+            self._set_error(self.ui.lineEditModelo, not modelo)
             QMessageBox.warning(self, "Validación", "Cliente, marca y modelo son obligatorios.")
             return
+        self._set_error(self.ui.lineEditCliente, False)
+        self._set_error(self.ui.lineEditMarca, False)
+        self._set_error(self.ui.lineEditModelo, False)
         if deposito > total:
             QMessageBox.warning(self, "Validación", "El depósito no puede superar el total.")
             return
@@ -72,6 +100,7 @@ class ReparacionesDialog(QDialog):
             accesorios,
         )
         QMessageBox.information(self, "Reparación", "Reparación guardada correctamente.")
+        self._show_status("Reparación guardada")
         self.accept()
 
     def _actualizar_totales(self):

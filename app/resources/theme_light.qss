@@ -1,0 +1,77 @@
+QWidget {
+    background: #fdfdfd;
+    color: #222;
+}
+
+QPushButton {
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background: #e6e6e6;
+}
+QPushButton:hover { background: #f0f0f0; }
+QPushButton:pressed { background: #d0d0d0; }
+QPushButton:disabled { background: #e0e0e0; color: #888; }
+
+QLineEdit, QPlainTextEdit, QComboBox, QSpinBox, QDoubleSpinBox {
+    border: 1px solid #ccc;
+    padding: 4px;
+    border-radius: 4px;
+    background: #fff;
+}
+QLineEdit:focus, QPlainTextEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus {
+    border: 1px solid #5b9bd5;
+}
+
+QGroupBox {
+    margin-top: 20px;
+    border: 1px solid #ccc;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    padding: 0 3px;
+}
+
+QMenuBar {
+    background: #eaeaea;
+}
+QMenuBar::item {
+    padding: 4px 8px;
+}
+QMenuBar::item:selected {
+    background: #d0d0d0;
+}
+QMenu {
+    background: #ffffff;
+}
+QMenu::item {
+    padding: 4px 24px;
+}
+QMenu::item:selected {
+    background: #5b9bd5;
+    color: white;
+}
+QMenu::separator {
+    height: 1px;
+    background: #d0d0d0;
+    margin: 4px 0;
+}
+
+QTableView {
+    alternate-background-color: #f6f6f6;
+    gridline-color: #d0d0d0;
+}
+QHeaderView::section {
+    padding: 4px;
+    background: #eaeaea;
+    border: 1px solid #d0d0d0;
+}
+QTableView::item:selected {
+    background: #5b9bd5;
+    color: white;
+}
+
+QLineEdit[error="true"] {
+    border: 1px solid #d9534f;
+}

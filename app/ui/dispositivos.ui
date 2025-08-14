@@ -6,28 +6,50 @@
    <string>Dispositivos</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing"><number>12</number></property>
+   <property name="leftMargin"><number>12</number></property>
+   <property name="topMargin"><number>12</number></property>
+   <property name="rightMargin"><number>12</number></property>
+   <property name="bottomMargin"><number>12</number></property>
    <item>
     <layout class="QHBoxLayout" name="layoutInputs">
+     <property name="spacing"><number>12</number></property>
      <item>
-      <widget class="QComboBox" name="comboCliente"/>
+      <widget class="QComboBox" name="comboCliente">
+       <property name="accessibleName"><string>cliente</string></property>
+      </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="lineEditMarca"/>
+      <widget class="QLineEdit" name="lineEditMarca">
+       <property name="placeholderText"><string>Marca</string></property>
+       <property name="accessibleName"><string>marca</string></property>
+      </widget>
      </item>
     <item>
-      <widget class="QLineEdit" name="lineEditModelo"/>
+      <widget class="QLineEdit" name="lineEditModelo">
+       <property name="placeholderText"><string>Modelo</string></property>
+       <property name="accessibleName"><string>modelo</string></property>
+      </widget>
+    </item>
+     <item>
+      <widget class="QLineEdit" name="lineEditIMEI">
+       <property name="placeholderText"><string>IMEI</string></property>
+      </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="lineEditIMEI"/>
+      <widget class="QLineEdit" name="lineEditSerie">
+       <property name="placeholderText"><string>N° Serie</string></property>
+      </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="lineEditSerie"/>
+      <widget class="QLineEdit" name="lineEditColor">
+       <property name="placeholderText"><string>Color</string></property>
+      </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="lineEditColor"/>
-     </item>
-     <item>
-      <widget class="QLineEdit" name="lineEditAccesorios"/>
+      <widget class="QLineEdit" name="lineEditAccesorios">
+       <property name="placeholderText"><string>Accesorios</string></property>
+      </widget>
      </item>
      <item>
       <widget class="QPushButton" name="btnAgregar">
@@ -40,13 +62,17 @@
    </item>
    <item>
     <widget class="QTableView" name="tableDispositivos">
+     <property name="alternatingRowColors"><bool>true</bool></property>
      <property name="selectionBehavior">
       <enum>QAbstractItemView::SelectRows</enum>
      </property>
+     <property name="selectionMode"><enum>QAbstractItemView::SingleSelection</enum></property>
+     <property name="sortingEnabled"><bool>true</bool></property>
+     <attribute name="horizontalHeaderStretchLastSection"><bool>true</bool></attribute>
     </widget>
    </item>
-   <item>
-    <layout class="QHBoxLayout" name="layoutButtons">
+  <item>
+   <layout class="QHBoxLayout" name="layoutButtons">
      <item>
       <widget class="QPushButton" name="btnEliminar">
        <property name="text">
@@ -75,9 +101,22 @@
       </widget>
      </item>
     </layout>
-   </item>
-  </layout>
- </widget>
- <resources/>
- <connections/>
-</ui>
+  </item>
+   </layout>
+  </widget>
+  <tabstops>
+   <tabstop>comboCliente</tabstop>
+   <tabstop>lineEditMarca</tabstop>
+   <tabstop>lineEditModelo</tabstop>
+   <tabstop>lineEditIMEI</tabstop>
+   <tabstop>lineEditSerie</tabstop>
+   <tabstop>lineEditColor</tabstop>
+   <tabstop>lineEditAccesorios</tabstop>
+   <tabstop>btnAgregar</tabstop>
+   <tabstop>tableDispositivos</tabstop>
+   <tabstop>btnEliminar</tabstop>
+   <tabstop>btnCerrar</tabstop>
+  </tabstops>
+  <resources/>
+  <connections/>
+ </ui>

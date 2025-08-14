@@ -6,37 +6,51 @@
    <string>Nueva Reparación</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing"><number>12</number></property>
+   <property name="leftMargin"><number>12</number></property>
+   <property name="topMargin"><number>12</number></property>
+   <property name="rightMargin"><number>12</number></property>
+   <property name="bottomMargin"><number>12</number></property>
    <item>
     <layout class="QFormLayout" name="formLayout">
+     <property name="labelAlignment"><set>Qt::AlignRight|Qt::AlignVCenter</set></property>
+     <property name="spacing"><number>12</number></property>
+     <property name="leftMargin"><number>12</number></property>
+     <property name="topMargin"><number>12</number></property>
+     <property name="rightMargin"><number>12</number></property>
+     <property name="bottomMargin"><number>12</number></property>
      <item row="0" column="0">
       <widget class="QLabel" name="labelCliente">
-       <property name="text">
-        <string>Cliente</string>
-       </property>
+       <property name="text"><string>&amp;Cliente</string></property>
+       <property name="buddy"><cstring>lineEditCliente</cstring></property>
       </widget>
      </item>
      <item row="0" column="1">
-      <widget class="QLineEdit" name="lineEditCliente"/>
+      <widget class="QLineEdit" name="lineEditCliente">
+       <property name="placeholderText"><string>Nombre del cliente...</string></property>
+      </widget>
      </item>
      <item row="1" column="0">
       <widget class="QLabel" name="labelMarca">
-       <property name="text">
-        <string>Marca</string>
-       </property>
+       <property name="text"><string>&amp;Marca</string></property>
+       <property name="buddy"><cstring>lineEditMarca</cstring></property>
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QLineEdit" name="lineEditMarca"/>
+      <widget class="QLineEdit" name="lineEditMarca">
+       <property name="placeholderText"><string>Marca</string></property>
+      </widget>
      </item>
      <item row="2" column="0">
       <widget class="QLabel" name="labelModelo">
-       <property name="text">
-        <string>Modelo</string>
-       </property>
+       <property name="text"><string>&amp;Modelo</string></property>
+       <property name="buddy"><cstring>lineEditModelo</cstring></property>
       </widget>
      </item>
      <item row="2" column="1">
-      <widget class="QLineEdit" name="lineEditModelo"/>
+      <widget class="QLineEdit" name="lineEditModelo">
+       <property name="placeholderText"><string>Modelo</string></property>
+      </widget>
      </item>
      <item row="3" column="0">
       <widget class="QLabel" name="labelDiagnostico">
@@ -234,7 +248,9 @@
       </widget>
      </item>
      <item row="13" column="1">
-      <widget class="QLineEdit" name="lineEditTecnico"/>
+      <widget class="QLineEdit" name="lineEditTecnico">
+       <property name="placeholderText"><string>Técnico asignado</string></property>
+      </widget>
      </item>
      <item row="14" column="0">
       <widget class="QLabel" name="labelGarantia">
@@ -262,9 +278,8 @@
      </item>
      <item row="15" column="1">
       <widget class="QLineEdit" name="lineEditPassBloqueo">
-       <property name="echoMode">
-        <enum>QLineEdit::Password</enum>
-       </property>
+       <property name="echoMode"><enum>QLineEdit::Password</enum></property>
+       <property name="placeholderText"><string>PIN/Patrón</string></property>
       </widget>
      </item>
      <item row="16" column="0">
@@ -285,12 +300,14 @@
       </widget>
      </item>
      <item row="17" column="1">
-      <widget class="QLineEdit" name="lineEditAccesorios"/>
+      <widget class="QLineEdit" name="lineEditAccesorios">
+       <property name="placeholderText"><string>Accesorios entregados</string></property>
+      </widget>
      </item>
     </layout>
    </item>
-   <item>
-    <layout class="QHBoxLayout" name="buttonsLayout">
+  <item>
+   <layout class="QHBoxLayout" name="buttonsLayout">
      <item>
       <spacer name="horizontalSpacer">
        <property name="orientation">
@@ -306,9 +323,8 @@
      </item>
      <item>
       <widget class="QPushButton" name="btnGuardar">
-       <property name="text">
-        <string>Guardar</string>
-       </property>
+       <property name="text"><string>Guardar</string></property>
+       <property name="default"><bool>true</bool></property>
       </widget>
      </item>
      <item>
@@ -319,10 +335,32 @@
       </widget>
      </item>
     </layout>
-   </item>
-  </layout>
- </widget>
- <resources/>
- <connections/>
-</ui>
+  </item>
+   </layout>
+  </widget>
+  <tabstops>
+   <tabstop>lineEditCliente</tabstop>
+   <tabstop>lineEditMarca</tabstop>
+   <tabstop>lineEditModelo</tabstop>
+   <tabstop>plainTextDiagnostico</tabstop>
+   <tabstop>plainTextAcciones</tabstop>
+   <tabstop>plainTextPiezas</tabstop>
+   <tabstop>comboEstado</tabstop>
+   <tabstop>comboPrioridad</tabstop>
+   <tabstop>doubleSpinBoxManoObra</tabstop>
+   <tabstop>doubleSpinBoxCostoPiezas</tabstop>
+   <tabstop>doubleSpinBoxDeposito</tabstop>
+   <tabstop>doubleSpinBoxTotal</tabstop>
+   <tabstop>doubleSpinBoxSaldo</tabstop>
+   <tabstop>lineEditTecnico</tabstop>
+   <tabstop>spinBoxGarantia</tabstop>
+   <tabstop>lineEditPassBloqueo</tabstop>
+   <tabstop>checkBoxRespaldo</tabstop>
+   <tabstop>lineEditAccesorios</tabstop>
+   <tabstop>btnGuardar</tabstop>
+   <tabstop>btnCancelar</tabstop>
+  </tabstops>
+  <resources/>
+  <connections/>
+ </ui>
 

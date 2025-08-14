@@ -25,9 +25,13 @@ class Ui_InventarioDialog(object):
         if not InventarioDialog.objectName():
             InventarioDialog.setObjectName(u"InventarioDialog")
         self.verticalLayout = QVBoxLayout(InventarioDialog)
+        self.verticalLayout.setSpacing(12)
         self.verticalLayout.setObjectName(u"verticalLayout")
+        self.verticalLayout.setContentsMargins(12, 12, 12, 12)
         self.layoutInputs = QGridLayout()
+        self.layoutInputs.setSpacing(12)
         self.layoutInputs.setObjectName(u"layoutInputs")
+        self.layoutInputs.setContentsMargins(12, 12, 12, 12)
         self.lineEditSKU = QLineEdit(InventarioDialog)
         self.lineEditSKU.setObjectName(u"lineEditSKU")
 
@@ -90,7 +94,11 @@ class Ui_InventarioDialog(object):
 
         self.tableProductos = QTableView(InventarioDialog)
         self.tableProductos.setObjectName(u"tableProductos")
+        self.tableProductos.setAlternatingRowColors(True)
         self.tableProductos.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.tableProductos.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.tableProductos.setSortingEnabled(True)
+        self.tableProductos.horizontalHeader().setStretchLastSection(True)
 
         self.verticalLayout.addWidget(self.tableProductos)
 
@@ -113,14 +121,42 @@ class Ui_InventarioDialog(object):
 
         self.verticalLayout.addLayout(self.layoutButtons)
 
+        QWidget.setTabOrder(self.lineEditSKU, self.lineEditNombre)
+        QWidget.setTabOrder(self.lineEditNombre, self.comboCategoria)
+        QWidget.setTabOrder(self.comboCategoria, self.spinCantidad)
+        QWidget.setTabOrder(self.spinCantidad, self.spinStockMin)
+        QWidget.setTabOrder(self.spinStockMin, self.doubleCosto)
+        QWidget.setTabOrder(self.doubleCosto, self.doublePrecio)
+        QWidget.setTabOrder(self.doublePrecio, self.lineUbicacion)
+        QWidget.setTabOrder(self.lineUbicacion, self.lineProveedor)
+        QWidget.setTabOrder(self.lineProveedor, self.btnAgregar)
+        QWidget.setTabOrder(self.btnAgregar, self.tableProductos)
+        QWidget.setTabOrder(self.tableProductos, self.btnEliminar)
+        QWidget.setTabOrder(self.btnEliminar, self.btnCerrar)
 
         self.retranslateUi(InventarioDialog)
+
+        self.btnAgregar.setDefault(True)
+
 
         QMetaObject.connectSlotsByName(InventarioDialog)
     # setupUi
 
     def retranslateUi(self, InventarioDialog):
         InventarioDialog.setWindowTitle(QCoreApplication.translate("InventarioDialog", u"Inventario", None))
+        self.lineEditSKU.setPlaceholderText(QCoreApplication.translate("InventarioDialog", u"SKU", None))
+#if QT_CONFIG(accessibility)
+        self.lineEditSKU.setAccessibleName(QCoreApplication.translate("InventarioDialog", u"sku", None))
+#endif // QT_CONFIG(accessibility)
+        self.lineEditNombre.setPlaceholderText(QCoreApplication.translate("InventarioDialog", u"Nombre del producto", None))
+#if QT_CONFIG(accessibility)
+        self.lineEditNombre.setAccessibleName(QCoreApplication.translate("InventarioDialog", u"nombre_producto", None))
+#endif // QT_CONFIG(accessibility)
+#if QT_CONFIG(accessibility)
+        self.comboCategoria.setAccessibleName(QCoreApplication.translate("InventarioDialog", u"categoria", None))
+#endif // QT_CONFIG(accessibility)
+        self.lineUbicacion.setPlaceholderText(QCoreApplication.translate("InventarioDialog", u"Ubicaci\u00f3n", None))
+        self.lineProveedor.setPlaceholderText(QCoreApplication.translate("InventarioDialog", u"Proveedor", None))
         self.btnAgregar.setText(QCoreApplication.translate("InventarioDialog", u"Agregar", None))
         self.btnEliminar.setText(QCoreApplication.translate("InventarioDialog", u"Eliminar", None))
         self.btnCerrar.setText(QCoreApplication.translate("InventarioDialog", u"Cerrar", None))

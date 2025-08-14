@@ -6,9 +6,12 @@ from PySide6.QtWidgets import (
     QPushButton,
     QHBoxLayout,
     QLabel,
+    QMainWindow,
 )
-from PySide6.QtGui import QStandardItemModel, QStandardItem
+from PySide6.QtGui import QStandardItemModel, QStandardItem, QIcon
 from PySide6.QtCore import Qt
+
+from app.resources import icons_rc  # noqa: F401
 
 from app.ui.ui_dispositivos import Ui_DispositivosDialog
 from app.data import db
@@ -20,6 +23,11 @@ class DispositivosDialog(QDialog):
         super().__init__(parent)
         self.ui = Ui_DispositivosDialog()
         self.ui.setupUi(self)
+
+        self.setWindowIcon(QIcon(":/icons/devices.svg"))
+        self._set_button_icon(self.ui.btnAgregar, ":/icons/devices.svg")
+        self._set_button_icon(self.ui.btnEliminar, ":/icons/exit.svg")
+        self._set_button_icon(self.ui.btnCerrar, ":/icons/exit.svg")
 
         self._updating = False
         self._changed = False
@@ -49,6 +57,21 @@ class DispositivosDialog(QDialog):
 
         self._load_clientes()
         self._load_dispositivos()
+
+    def _set_button_icon(self, btn: QPushButton, resource: str) -> None:
+        icon = QIcon(resource)
+        if not icon.isNull():
+            btn.setIcon(icon)
+
+    def _show_status(self, text: str) -> None:
+        parent = self.parent()
+        if isinstance(parent, QMainWindow):
+            parent.statusBar().showMessage(text, 3000)
+
+    def _set_error(self, widget: QLineEdit, state: bool) -> None:
+        widget.setProperty("error", state)
+        widget.style().unpolish(widget)
+        widget.style().polish(widget)
 
     def _load_clientes(self):
         combo = self.ui.comboCliente
@@ -133,8 +156,12 @@ class DispositivosDialog(QDialog):
             QMessageBox.warning(self, "Validación", "Seleccione un cliente.")
             return
         if not marca or not modelo:
+            self._set_error(self.ui.lineEditMarca, not marca)
+            self._set_error(self.ui.lineEditModelo, not modelo)
             QMessageBox.warning(self, "Validación", "Marca y modelo son obligatorios.")
             return
+        self._set_error(self.ui.lineEditMarca, False)
+        self._set_error(self.ui.lineEditModelo, False)
         db.add_device(
             cid,
             marca,
@@ -152,6 +179,7 @@ class DispositivosDialog(QDialog):
         self.ui.lineEditColor.clear()
         self.ui.lineEditAccesorios.clear()
         self._load_dispositivos()
+        self._show_status("Dispositivo agregado")
 
     def _item_changed(self, item):
         if self._updating or item.column() not in (2, 3, 4, 5, 6):
@@ -181,6 +209,7 @@ class DispositivosDialog(QDialog):
             accesorios=accesorios or None,
         )
         self._changed = True
+        self._show_status("Dispositivo actualizado")
 
     def eliminar(self):
         index = self.ui.tableDispositivos.currentIndex()
@@ -194,6 +223,7 @@ class DispositivosDialog(QDialog):
             db.delete_device(did)
             self._changed = True
             self._load_dispositivos()
+            self._show_status("Dispositivo eliminado")
 
     def cerrar(self):
         if self._changed:
