@@ -386,17 +386,106 @@ def delete_device(device_id: int) -> bool:
     return cur.rowcount > 0
 
 
-def add_repair(cliente_nombre: str, marca: str, modelo: str, descripcion: str, costo: float, estado: str) -> int:
+def add_repair(
+    cliente_nombre: str,
+    marca: str,
+    modelo: str,
+    diagnostico: str,
+    acciones: str,
+    piezas_usadas: str,
+    costo_mano_obra: float,
+    deposito_pagado: float,
+    total: float,
+    saldo: float,
+    estado: str,
+    prioridad: str,
+    tecnico: str,
+    garantia_dias: int,
+    pass_bloqueo: str,
+    respaldo_datos: bool,
+    accesorios_entregados: str,
+) -> int:
+    """Insert a new repair with extended fields."""
     cid = add_client(cliente_nombre)
     did = add_device(cid, marca, modelo, None, None, None, None)
     conn = _ensure_conn()
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO reparaciones (dispositivo_id, descripcion, costo, estado) VALUES (?, ?, ?, ?)",
-        (did, descripcion, costo, estado),
+        """
+        INSERT INTO reparaciones (
+            dispositivo_id, descripcion, costo, estado, diagnostico, acciones,
+            piezas_usadas, costo_mano_obra, deposito_pagado, total, saldo,
+            prioridad, tecnico, garantia_dias, pass_bloqueo, respaldo_datos,
+            accesorios_entregados
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            did,
+            diagnostico,
+            total,
+            estado,
+            diagnostico,
+            acciones,
+            piezas_usadas,
+            costo_mano_obra,
+            deposito_pagado,
+            total,
+            saldo,
+            prioridad,
+            tecnico,
+            garantia_dias,
+            pass_bloqueo,
+            int(respaldo_datos),
+            accesorios_entregados,
+        ),
     )
     conn.commit()
     return cur.lastrowid
+
+
+def update_repair(repair_id: int, **campos) -> bool:
+    if not campos:
+        return False
+    allowed = {
+        "descripcion",
+        "diagnostico",
+        "acciones",
+        "piezas_usadas",
+        "costo_mano_obra",
+        "deposito_pagado",
+        "total",
+        "saldo",
+        "estado",
+        "prioridad",
+        "tecnico",
+        "garantia_dias",
+        "pass_bloqueo",
+        "respaldo_datos",
+        "accesorios_entregados",
+    }
+    fields: List[str] = []
+    params: List[object] = []
+    for key, value in campos.items():
+        if key not in allowed:
+            continue
+        if key == "respaldo_datos":
+            value = int(bool(value))
+        fields.append(f"{key} = ?")
+        params.append(value)
+        if key == "total":
+            fields.append("costo = ?")
+            params.append(value)
+    if not fields:
+        return False
+    params.append(repair_id)
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute(
+        f"UPDATE reparaciones SET {', '.join(fields)} WHERE id = ?",
+        params,
+    )
+    conn.commit()
+    return cur.rowcount > 0
 
 
 # --- Inventario ---
