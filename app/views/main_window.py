@@ -4,7 +4,10 @@ from __future__ import annotations
 import importlib
 from typing import Optional, Type
 
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QDialog, QMainWindow, QMessageBox
+
+from app.resources import app_icons_rc  # noqa: F401
 from app.ui.ui_main_window import Ui_MainWindow
 from app.data import summary_service
 
@@ -14,6 +17,13 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+
+        # Iconos de acciones (si los recursos están disponibles)
+        self._set_action_icon(self.ui.actionClientes, ":/icons/clients.svg")
+        self._set_action_icon(self.ui.actionDispositivos, ":/icons/devices.svg")
+        self._set_action_icon(self.ui.actionInventario, ":/icons/inventory.svg")
+        self._set_action_icon(self.ui.actionReparaciones, ":/icons/repairs.svg")
+        self._set_action_icon(self.ui.actionSalir, ":/icons/exit.svg")
 
         # Conexión de acciones del menú
         self.ui.actionSalir.triggered.connect(self.close)
@@ -85,6 +95,12 @@ class MainWindow(QMainWindow):
             if label is not None:
                 label.setText(str(value))
                 break
+
+    def _set_action_icon(self, action, resource_path):
+        """Asigna un icono a una acción si existe."""
+        icon = QIcon(resource_path)
+        if not icon.isNull():
+            action.setIcon(icon)
 
     def _no_impl(self, nombre):
         QMessageBox.information(
