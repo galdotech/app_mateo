@@ -1,9 +1,18 @@
 # -*- coding: utf-8 -*-
-from PySide6.QtWidgets import QDialog, QMessageBox, QTableWidgetItem
+from PySide6.QtWidgets import (
+    QDialog,
+    QMessageBox,
+    QLineEdit,
+    QPushButton,
+    QHBoxLayout,
+    QLabel,
+)
+from PySide6.QtGui import QStandardItemModel, QStandardItem
 from PySide6.QtCore import Qt
 
 from app.ui.ui_inventario import Ui_InventarioDialog
 from app.data import db
+from .filter_proxy import MultiFilterProxyModel
 
 
 class InventarioDialog(QDialog):
@@ -17,7 +26,29 @@ class InventarioDialog(QDialog):
         self.ui.btnAgregar.clicked.connect(self.agregar)
         self.ui.btnEliminar.clicked.connect(self.eliminar)
         self.ui.btnCerrar.clicked.connect(self.close)
-        self.ui.tableProductos.itemChanged.connect(self._item_changed)
+
+        # Model + proxy
+        self.model = QStandardItemModel(0, 9, self)
+        self.model.setHorizontalHeaderLabels(
+            [
+                "SKU",
+                "Nombre",
+                "Categoría",
+                "Cantidad",
+                "Stock mín",
+                "Costo",
+                "Precio",
+                "Ubicación",
+                "Proveedor",
+            ]
+        )
+        self.model.itemChanged.connect(self._item_changed)
+        self.proxy = MultiFilterProxyModel(self)
+        self.proxy.setSourceModel(self.model)
+        self.ui.tableProductos.setModel(self.proxy)
+        self.ui.tableProductos.setSortingEnabled(True)
+
+        self._setup_filters()
 
         self._load_products()
 
@@ -32,12 +63,44 @@ class InventarioDialog(QDialog):
         self.ui.lineUbicacion.clear()
         self.ui.lineProveedor.clear()
 
+    def _setup_filters(self) -> None:
+        layout = QHBoxLayout()
+        self.filter_nombre = QLineEdit(self)
+        self.filter_sku = QLineEdit(self)
+        self.filter_categoria = QLineEdit(self)
+        self.filter_proveedor = QLineEdit(self)
+        self.btn_clear = QPushButton("Limpiar filtros", self)
+
+        layout.addWidget(QLabel("Nombre:"))
+        layout.addWidget(self.filter_nombre)
+        layout.addWidget(QLabel("SKU:"))
+        layout.addWidget(self.filter_sku)
+        layout.addWidget(QLabel("Categoría:"))
+        layout.addWidget(self.filter_categoria)
+        layout.addWidget(QLabel("Proveedor:"))
+        layout.addWidget(self.filter_proveedor)
+        layout.addWidget(self.btn_clear)
+
+        self.ui.verticalLayout.insertLayout(1, layout)
+
+        self.filter_nombre.textChanged.connect(lambda text: self.proxy.setFilterForColumn(1, text))
+        self.filter_sku.textChanged.connect(lambda text: self.proxy.setFilterForColumn(0, text))
+        self.filter_categoria.textChanged.connect(lambda text: self.proxy.setFilterForColumn(2, text))
+        self.filter_proveedor.textChanged.connect(lambda text: self.proxy.setFilterForColumn(8, text))
+        self.btn_clear.clicked.connect(self._clear_filters)
+
+    def _clear_filters(self) -> None:
+        self.filter_nombre.clear()
+        self.filter_sku.clear()
+        self.filter_categoria.clear()
+        self.filter_proveedor.clear()
+        self.proxy.clearFilters()
+
     def _load_products(self) -> None:
         self._updating = True
-        table = self.ui.tableProductos
-        table.blockSignals(True)
-        table.setRowCount(0)
-        for row, (
+        self.model.blockSignals(True)
+        self.model.setRowCount(0)
+        for (
             pid,
             sku,
             nombre,
@@ -49,33 +112,26 @@ class InventarioDialog(QDialog):
             ubicacion,
             proveedor,
             _notas,
-        ) in enumerate(db.listar_productos_detallado()):
-            table.insertRow(row)
-            sku_item = QTableWidgetItem(sku or "")
-            sku_item.setData(Qt.UserRole, pid)
-            sku_item.setFlags(sku_item.flags() & ~Qt.ItemIsEditable)
-            name_item = QTableWidgetItem(nombre)
-            name_item.setFlags(name_item.flags() & ~Qt.ItemIsEditable)
-            cat_item = QTableWidgetItem(categoria or "")
-            cat_item.setFlags(cat_item.flags() & ~Qt.ItemIsEditable)
-            qty_item = QTableWidgetItem(str(cantidad))
-            stock_item = QTableWidgetItem(str(stock_min))
-            costo_item = QTableWidgetItem(f"{costo:.2f}")
-            precio_item = QTableWidgetItem(f"{precio:.2f}")
-            precio_item.setToolTip(f"Margen: {precio - costo:.2f}")
-            ubic_item = QTableWidgetItem(ubicacion or "")
-            prov_item = QTableWidgetItem(proveedor or "")
-            table.setItem(row, 0, sku_item)
-            table.setItem(row, 1, name_item)
-            table.setItem(row, 2, cat_item)
-            table.setItem(row, 3, qty_item)
-            table.setItem(row, 4, stock_item)
-            table.setItem(row, 5, costo_item)
-            table.setItem(row, 6, precio_item)
-            table.setItem(row, 7, ubic_item)
-            table.setItem(row, 8, prov_item)
-        table.resizeColumnsToContents()
-        table.blockSignals(False)
+        ) in db.listar_productos_detallado():
+            row = [
+                QStandardItem(sku or ""),
+                QStandardItem(nombre),
+                QStandardItem(categoria or ""),
+                QStandardItem(str(cantidad)),
+                QStandardItem(str(stock_min)),
+                QStandardItem(f"{costo:.2f}"),
+                QStandardItem(f"{precio:.2f}"),
+                QStandardItem(ubicacion or ""),
+                QStandardItem(proveedor or ""),
+            ]
+            row[0].setEditable(False)
+            row[0].setData(pid, Qt.UserRole)
+            row[1].setEditable(False)
+            row[2].setEditable(False)
+            row[6].setToolTip(f"Margen: {precio - costo:.2f}")
+            self.model.appendRow(row)
+        self.ui.tableProductos.resizeColumnsToContents()
+        self.model.blockSignals(False)
         self._updating = False
 
     def agregar(self) -> None:
@@ -117,7 +173,7 @@ class InventarioDialog(QDialog):
         if self._updating:
             return
         row = item.row()
-        pid_item = self.ui.tableProductos.item(row, 0)
+        pid_item = self.model.item(row, 0)
         if not pid_item:
             return
         pid = pid_item.data(Qt.UserRole)
@@ -154,16 +210,17 @@ class InventarioDialog(QDialog):
             self._load_products()
             return
         if col in (5, 6):
-            costo = float(self.ui.tableProductos.item(row, 5).text())
-            precio = float(self.ui.tableProductos.item(row, 6).text())
-            self.ui.tableProductos.item(row, 6).setToolTip(f"Margen: {precio - costo:.2f}")
+            costo = float(self.model.item(row, 5).text())
+            precio = float(self.model.item(row, 6).text())
+            self.model.item(row, 6).setToolTip(f"Margen: {precio - costo:.2f}")
 
     def eliminar(self) -> None:
-        row = self.ui.tableProductos.currentRow()
-        if row < 0:
+        index = self.ui.tableProductos.currentIndex()
+        if not index.isValid():
             QMessageBox.warning(self, "Eliminar", "Seleccione un producto.")
             return
-        id_item = self.ui.tableProductos.item(row, 0)
+        source = self.proxy.mapToSource(index)
+        id_item = self.model.item(source.row(), 0)
         if not id_item:
             return
         pid = id_item.data(Qt.UserRole)
