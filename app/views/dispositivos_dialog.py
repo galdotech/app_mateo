@@ -99,9 +99,9 @@ class DispositivosDialog(QDialog):
 
     def cerrar(self):
         if self._changed:
-            self.accept()
+            super().accept()
         else:
-            self.reject()
+            super().reject()
 
     def reject(self):  # type: ignore[override]
         self.cerrar()
