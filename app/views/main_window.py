@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from PySide6.QtWidgets import QMainWindow, QMessageBox
 from app.ui.ui_main_window import Ui_MainWindow
-from app.data import db
+from app.data import summary_service
 from app.views.clientes_dialog import ClientesDialog
 from app.views.inventario_dialog import InventarioDialog
 from app.views.reparaciones_dialog import ReparacionesDialog
@@ -20,28 +20,36 @@ class MainWindow(QMainWindow):
         self.ui.actionReparaciones.triggered.connect(self._open_reparaciones)
 
         # Resumen inicial
-        self._refresh_summary()
+        self.refresh_summary()
 
     def _open_clientes(self):
         dlg = ClientesDialog(self)
         dlg.exec()
-        self._refresh_summary()
+        self.refresh_summary()
 
     def _open_inventario(self):
         dlg = InventarioDialog(self)
         dlg.exec()
-        self._refresh_summary()
+        self.refresh_summary()
 
     def _open_reparaciones(self):
         dlg = ReparacionesDialog(self)
         if dlg.exec():
-            self._refresh_summary()
+            self.refresh_summary()
 
-    def _refresh_summary(self):
-        self.ui.label_total_clientes.setText(str(db.contar_clientes()))
-        self.ui.label_total_dispositivos.setText(str(db.contar_dispositivos()))
-        self.ui.label_total_productos.setText(str(db.contar_productos()))
-        self.ui.label_total_reparaciones.setText(str(db.contar_reparaciones_pendientes()))
+    def refresh_summary(self):
+        total_clientes, total_dispositivos, total_productos, total_reparaciones = summary_service.get_counts()
+        self._set_label_text(["label_total_clientes", "labelTotalClientes"], total_clientes)
+        self._set_label_text(["label_total_dispositivos", "labelTotalDispositivos"], total_dispositivos)
+        self._set_label_text(["label_total_productos", "labelTotalProductos"], total_productos)
+        self._set_label_text(["label_total_reparaciones", "labelTotalReparaciones"], total_reparaciones)
+
+    def _set_label_text(self, names, value):
+        for name in names:
+            label = getattr(self.ui, name, None)
+            if label is not None:
+                label.setText(str(value))
+                break
 
     def _no_impl(self, nombre):
         QMessageBox.information(self, nombre, f"El módulo '{nombre}' aún no está implementado en este base.\n"
