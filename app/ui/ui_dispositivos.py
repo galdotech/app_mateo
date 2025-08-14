@@ -17,8 +17,8 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QComboBox, QDialog,
     QHBoxLayout, QHeaderView, QLineEdit, QPushButton,
-    QSizePolicy, QSpacerItem, QTableWidget, QTableWidgetItem,
-    QVBoxLayout, QWidget)
+    QSizePolicy, QSpacerItem, QTableView, QVBoxLayout,
+    QWidget)
 
 class Ui_DispositivosDialog(object):
     def setupUi(self, DispositivosDialog):
@@ -71,25 +71,8 @@ class Ui_DispositivosDialog(object):
 
         self.verticalLayout.addLayout(self.layoutInputs)
 
-        self.tableDispositivos = QTableWidget(DispositivosDialog)
-        if (self.tableDispositivos.columnCount() < 7):
-            self.tableDispositivos.setColumnCount(7)
-        __qtablewidgetitem = QTableWidgetItem()
-        self.tableDispositivos.setHorizontalHeaderItem(0, __qtablewidgetitem)
-        __qtablewidgetitem1 = QTableWidgetItem()
-        self.tableDispositivos.setHorizontalHeaderItem(1, __qtablewidgetitem1)
-        __qtablewidgetitem2 = QTableWidgetItem()
-        self.tableDispositivos.setHorizontalHeaderItem(2, __qtablewidgetitem2)
-        __qtablewidgetitem3 = QTableWidgetItem()
-        self.tableDispositivos.setHorizontalHeaderItem(3, __qtablewidgetitem3)
-        __qtablewidgetitem4 = QTableWidgetItem()
-        self.tableDispositivos.setHorizontalHeaderItem(4, __qtablewidgetitem4)
-        __qtablewidgetitem5 = QTableWidgetItem()
-        self.tableDispositivos.setHorizontalHeaderItem(5, __qtablewidgetitem5)
-        __qtablewidgetitem6 = QTableWidgetItem()
-        self.tableDispositivos.setHorizontalHeaderItem(6, __qtablewidgetitem6)
+        self.tableDispositivos = QTableView(DispositivosDialog)
         self.tableDispositivos.setObjectName(u"tableDispositivos")
-        self.tableDispositivos.setColumnCount(7)
         self.tableDispositivos.setSelectionBehavior(QAbstractItemView.SelectRows)
 
         self.verticalLayout.addWidget(self.tableDispositivos)
@@ -122,20 +105,6 @@ class Ui_DispositivosDialog(object):
     def retranslateUi(self, DispositivosDialog):
         DispositivosDialog.setWindowTitle(QCoreApplication.translate("DispositivosDialog", u"Dispositivos", None))
         self.btnAgregar.setText(QCoreApplication.translate("DispositivosDialog", u"Agregar", None))
-        ___qtablewidgetitem = self.tableDispositivos.horizontalHeaderItem(0)
-        ___qtablewidgetitem.setText(QCoreApplication.translate("DispositivosDialog", u"Cliente", None));
-        ___qtablewidgetitem1 = self.tableDispositivos.horizontalHeaderItem(1)
-        ___qtablewidgetitem1.setText(QCoreApplication.translate("DispositivosDialog", u"Marca", None));
-        ___qtablewidgetitem2 = self.tableDispositivos.horizontalHeaderItem(2)
-        ___qtablewidgetitem2.setText(QCoreApplication.translate("DispositivosDialog", u"Modelo", None));
-        ___qtablewidgetitem3 = self.tableDispositivos.horizontalHeaderItem(3)
-        ___qtablewidgetitem3.setText(QCoreApplication.translate("DispositivosDialog", u"IMEI", None));
-        ___qtablewidgetitem4 = self.tableDispositivos.horizontalHeaderItem(4)
-        ___qtablewidgetitem4.setText(QCoreApplication.translate("DispositivosDialog", u"N\u00ba Serie", None));
-        ___qtablewidgetitem5 = self.tableDispositivos.horizontalHeaderItem(5)
-        ___qtablewidgetitem5.setText(QCoreApplication.translate("DispositivosDialog", u"Color", None));
-        ___qtablewidgetitem6 = self.tableDispositivos.horizontalHeaderItem(6)
-        ___qtablewidgetitem6.setText(QCoreApplication.translate("DispositivosDialog", u"Accesorios", None));
         self.btnEliminar.setText(QCoreApplication.translate("DispositivosDialog", u"Eliminar", None))
         self.btnCerrar.setText(QCoreApplication.translate("DispositivosDialog", u"Cerrar", None))
     # retranslateUi

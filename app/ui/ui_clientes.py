@@ -18,7 +18,7 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QDialog, QFormLayout,
     QHBoxLayout, QHeaderView, QLabel, QLineEdit,
     QPlainTextEdit, QPushButton, QSizePolicy, QSpacerItem,
-    QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget)
+    QTableView, QVBoxLayout, QWidget)
 
 class Ui_ClientesDialog(object):
     def setupUi(self, ClientesDialog):
@@ -106,19 +106,8 @@ class Ui_ClientesDialog(object):
 
         self.verticalLayout.addLayout(self.horizontalLayoutBtns)
 
-        self.tableClientes = QTableWidget(ClientesDialog)
-        if (self.tableClientes.columnCount() < 4):
-            self.tableClientes.setColumnCount(4)
-        __qtablewidgetitem = QTableWidgetItem()
-        self.tableClientes.setHorizontalHeaderItem(0, __qtablewidgetitem)
-        __qtablewidgetitem1 = QTableWidgetItem()
-        self.tableClientes.setHorizontalHeaderItem(1, __qtablewidgetitem1)
-        __qtablewidgetitem2 = QTableWidgetItem()
-        self.tableClientes.setHorizontalHeaderItem(2, __qtablewidgetitem2)
-        __qtablewidgetitem3 = QTableWidgetItem()
-        self.tableClientes.setHorizontalHeaderItem(3, __qtablewidgetitem3)
+        self.tableClientes = QTableView(ClientesDialog)
         self.tableClientes.setObjectName(u"tableClientes")
-        self.tableClientes.setColumnCount(4)
         self.tableClientes.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.tableClientes.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
@@ -159,14 +148,6 @@ class Ui_ClientesDialog(object):
         self.labelNotas.setText(QCoreApplication.translate("ClientesDialog", u"Notas", None))
         self.btnAgregar.setText(QCoreApplication.translate("ClientesDialog", u"Agregar", None))
         self.btnGuardar.setText(QCoreApplication.translate("ClientesDialog", u"Guardar cambios", None))
-        ___qtablewidgetitem = self.tableClientes.horizontalHeaderItem(0)
-        ___qtablewidgetitem.setText(QCoreApplication.translate("ClientesDialog", u"ID", None));
-        ___qtablewidgetitem1 = self.tableClientes.horizontalHeaderItem(1)
-        ___qtablewidgetitem1.setText(QCoreApplication.translate("ClientesDialog", u"Nombre", None));
-        ___qtablewidgetitem2 = self.tableClientes.horizontalHeaderItem(2)
-        ___qtablewidgetitem2.setText(QCoreApplication.translate("ClientesDialog", u"Tel\u00e9fono", None));
-        ___qtablewidgetitem3 = self.tableClientes.horizontalHeaderItem(3)
-        ___qtablewidgetitem3.setText(QCoreApplication.translate("ClientesDialog", u"Email", None));
         self.btnEliminar.setText(QCoreApplication.translate("ClientesDialog", u"Eliminar", None))
         self.btnCerrar.setText(QCoreApplication.translate("ClientesDialog", u"Cerrar", None))
     # retranslateUi

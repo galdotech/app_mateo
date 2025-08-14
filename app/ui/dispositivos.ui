@@ -39,48 +39,10 @@
     </layout>
    </item>
    <item>
-    <widget class="QTableWidget" name="tableDispositivos">
-     <property name="columnCount">
-      <number>7</number>
-     </property>
+    <widget class="QTableView" name="tableDispositivos">
      <property name="selectionBehavior">
       <enum>QAbstractItemView::SelectRows</enum>
      </property>
-     <column>
-      <property name="text">
-       <string>Cliente</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Marca</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Modelo</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>IMEI</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Nº Serie</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Color</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Accesorios</string>
-      </property>
-     </column>
     </widget>
    </item>
    <item>
