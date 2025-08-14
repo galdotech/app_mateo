@@ -32,6 +32,7 @@ class DispositivosDialog(QDialog):
     def _load_dispositivos(self):
         self._updating = True
         table = self.ui.tableDispositivos
+        table.blockSignals(True)
         table.setRowCount(0)
         for row, (did, cid, cname, marca, modelo, imei) in enumerate(db.listar_dispositivos()):
             table.insertRow(row)
@@ -46,6 +47,7 @@ class DispositivosDialog(QDialog):
             table.setItem(row, 2, modelo_item)
             table.setItem(row, 3, imei_item)
         table.resizeColumnsToContents()
+        table.blockSignals(False)
         self._updating = False
 
     def agregar(self):
