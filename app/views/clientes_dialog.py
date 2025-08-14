@@ -153,7 +153,7 @@ class ClientesDialog(QDialog):
             return
         self._set_error(self.ui.lineEditTelefono, False)
 
-        db.add_cliente(
+        cid = db.add_cliente(
             nombre,
             telefono=telefono or None,
             email=email or None,
@@ -161,6 +161,9 @@ class ClientesDialog(QDialog):
             nif=nif or None,
             notas=notas or None,
         )
+        if cid is None:
+            QMessageBox.warning(self, "Agregar", "El cliente ya existe.")
+            return
         self._clear_form()
         self._load_clientes()
         self._show_status("Cliente agregado")
