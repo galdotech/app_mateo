@@ -24,6 +24,7 @@ class InventarioDialog(QDialog):
     def _load_products(self):
         self._updating = True
         table = self.ui.tableProductos
+        table.blockSignals(True)
         table.setRowCount(0)
         for row, (pid, nombre, cantidad) in enumerate(db.get_products()):
             table.insertRow(row)
@@ -34,6 +35,7 @@ class InventarioDialog(QDialog):
             table.setItem(row, 0, name_item)
             table.setItem(row, 1, qty_item)
         table.resizeColumnsToContents()
+        table.blockSignals(False)
         self._updating = False
 
     def agregar(self):

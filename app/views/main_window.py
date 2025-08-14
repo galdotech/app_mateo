@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
-from PySide6.QtWidgets import QMainWindow, QMessageBox
+from __future__ import annotations
+
+import importlib
+from typing import Optional, Type
+
+from PySide6.QtWidgets import QDialog, QMainWindow, QMessageBox
 from app.ui.ui_main_window import Ui_MainWindow
 from app.data import summary_service
-from app.views.clientes_dialog import ClientesDialog
-from app.views.inventario_dialog import InventarioDialog
-from app.views.reparaciones_dialog import ReparacionesDialog
-from app.views.dispositivos_dialog import DispositivosDialog
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -23,23 +25,50 @@ class MainWindow(QMainWindow):
         # Resumen inicial
         self.refresh_summary()
 
+    def _load_dialog_class(self, base: str, class_name: str) -> Optional[Type[QDialog]]:
+        """Try to import a dialog class handling plural/singular variations."""
+        for variant in {base, base.rstrip('s'), base + 's'}:
+            module_name = f'app.views.{variant}_dialog'
+            try:
+                module = importlib.import_module(module_name)
+                return getattr(module, class_name)
+            except Exception:
+                continue
+        return None
+
     def _open_clientes(self):
-        dlg = ClientesDialog(self)
+        dlg_cls = self._load_dialog_class('clientes', 'ClientesDialog')
+        if dlg_cls is None:
+            self._no_impl('Clientes')
+            return
+        dlg = dlg_cls(self)
         dlg.exec()
         self.refresh_summary()
 
     def _open_inventario(self):
-        dlg = InventarioDialog(self)
+        dlg_cls = self._load_dialog_class('inventario', 'InventarioDialog')
+        if dlg_cls is None:
+            self._no_impl('Inventario')
+            return
+        dlg = dlg_cls(self)
         dlg.exec()
         self.refresh_summary()
 
     def _open_reparaciones(self):
-        dlg = ReparacionesDialog(self)
+        dlg_cls = self._load_dialog_class('reparaciones', 'ReparacionesDialog')
+        if dlg_cls is None:
+            self._no_impl('Reparaciones')
+            return
+        dlg = dlg_cls(self)
         if dlg.exec():
             self.refresh_summary()
 
     def _open_dispositivos(self):
-        dlg = DispositivosDialog(self)
+        dlg_cls = self._load_dialog_class('dispositivos', 'DispositivosDialog')
+        if dlg_cls is None:
+            self._no_impl('Dispositivos')
+            return
+        dlg = dlg_cls(self)
         if dlg.exec():
             self.refresh_summary()
 
@@ -58,5 +87,8 @@ class MainWindow(QMainWindow):
                 break
 
     def _no_impl(self, nombre):
-        QMessageBox.information(self, nombre, f"El módulo '{nombre}' aún no está implementado en este base.\n"
-                                              f"Usa Codex/PRs para generarlo y conéctalo aquí.")
+        QMessageBox.information(
+            self,
+            nombre,
+            f"El módulo '{nombre}' aún no está implementado en este base.\nUsa Codex/PRs para generarlo y conéctalo aquí.",
+        )
