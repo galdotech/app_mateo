@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib
+from pathlib import Path
 from typing import Optional, Type
 
 from PySide6.QtGui import QIcon
