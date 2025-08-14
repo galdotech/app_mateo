@@ -214,12 +214,51 @@ def listar_clientes():
     cur.execute("SELECT id, nombre FROM clientes ORDER BY id")
     return cur.fetchall()
 
-def add_cliente(nombre: str) -> int:
+def listar_clientes_detallado() -> List[Tuple[int, str, Optional[str], Optional[str], Optional[str], Optional[str], Optional[str]]]:
+    cur = _ensure_conn().cursor()
+    cur.execute(
+        "SELECT id, nombre, telefono, email, direccion, nif, notas FROM clientes ORDER BY id"
+    )
+    return cur.fetchall()
+
+
+def add_cliente(
+    nombre: str,
+    *,
+    telefono: Optional[str] = None,
+    email: Optional[str] = None,
+    direccion: Optional[str] = None,
+    nif: Optional[str] = None,
+    notas: Optional[str] = None,
+) -> int:
     conn = _ensure_conn()
     cur = conn.cursor()
-    cur.execute("INSERT INTO clientes (nombre) VALUES (?)", (nombre,))
+    cur.execute(
+        "INSERT INTO clientes (nombre, telefono, email, direccion, nif, notas) VALUES (?, ?, ?, ?, ?, ?)",
+        (nombre, telefono, email, direccion, nif, notas),
+    )
     conn.commit()
     return cur.lastrowid
+
+
+def update_cliente(cliente_id: int, **campos) -> bool:
+    if not campos:
+        return False
+    fields = []
+    params: List[object] = []
+    for key, value in campos.items():
+        if key not in {"nombre", "telefono", "email", "direccion", "nif", "notas"}:
+            continue
+        fields.append(f"{key} = ?")
+        params.append(value)
+    if not fields:
+        return False
+    params.append(cliente_id)
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute(f"UPDATE clientes SET {', '.join(fields)} WHERE id = ?", params)
+    conn.commit()
+    return cur.rowcount > 0
 
 def delete_cliente(cliente_id: int) -> bool:
     conn = _ensure_conn()
