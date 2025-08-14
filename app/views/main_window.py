@@ -5,6 +5,7 @@ from app.data import summary_service
 from app.views.clientes_dialog import ClientesDialog
 from app.views.inventario_dialog import InventarioDialog
 from app.views.reparaciones_dialog import ReparacionesDialog
+from app.views.dispositivos_dialog import DispositivosDialog
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -15,7 +16,7 @@ class MainWindow(QMainWindow):
         # Conexión de acciones del menú
         self.ui.actionSalir.triggered.connect(self.close)
         self.ui.actionClientes.triggered.connect(self._open_clientes)
-        self.ui.actionDispositivos.triggered.connect(lambda: self._no_impl("Dispositivos"))
+        self.ui.actionDispositivos.triggered.connect(self._open_dispositivos)
         self.ui.actionInventario.triggered.connect(self._open_inventario)
         self.ui.actionReparaciones.triggered.connect(self._open_reparaciones)
 
@@ -34,6 +35,11 @@ class MainWindow(QMainWindow):
 
     def _open_reparaciones(self):
         dlg = ReparacionesDialog(self)
+        if dlg.exec():
+            self.refresh_summary()
+
+    def _open_dispositivos(self):
+        dlg = DispositivosDialog(self)
         if dlg.exec():
             self.refresh_summary()
 
