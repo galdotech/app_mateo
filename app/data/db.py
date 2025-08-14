@@ -29,9 +29,15 @@ def _create_tables(conn: sqlite3.Connection) -> None:
             cliente_id INTEGER NOT NULL,
             marca TEXT,
             modelo TEXT,
+            imei TEXT,
             FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
         )
     """)
+    # Ensure column 'imei' exists
+    cur.execute("PRAGMA table_info(dispositivos)")
+    cols = [row[1] for row in cur.fetchall()]
+    if "imei" not in cols:
+        cur.execute("ALTER TABLE dispositivos ADD COLUMN imei TEXT")
     cur.execute("""
         CREATE TABLE IF NOT EXISTS inventario (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -118,33 +124,79 @@ def add_client(nombre: str) -> int:
     return add_cliente(nombre)
 
 
-def find_device(cliente_id: int, marca: str, modelo: str) -> Optional[int]:
+def find_device(cliente_id: int, marca: str, modelo: str, imei: Optional[str] = None) -> Optional[int]:
     cur = _ensure_conn().cursor()
     cur.execute(
-        "SELECT id FROM dispositivos WHERE cliente_id = ? AND marca = ? AND modelo = ?",
-        (cliente_id, marca, modelo),
+        """
+        SELECT id FROM dispositivos
+        WHERE cliente_id = ? AND marca = ? AND modelo = ? AND (imei = ? OR (imei IS NULL AND ? IS NULL))
+        """,
+        (cliente_id, marca, modelo, imei, imei),
     )
     row = cur.fetchone()
     return row[0] if row else None
 
 
-def add_device(cliente_id: int, marca: str, modelo: str) -> int:
-    did = find_device(cliente_id, marca, modelo)
+def add_device(cliente_id: int, marca: str, modelo: str, imei: Optional[str]) -> int:
+    did = find_device(cliente_id, marca, modelo, imei)
     if did is not None:
         return did
     conn = _ensure_conn()
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO dispositivos (cliente_id, marca, modelo) VALUES (?, ?, ?)",
-        (cliente_id, marca, modelo),
+        "INSERT INTO dispositivos (cliente_id, marca, modelo, imei) VALUES (?, ?, ?, ?)",
+        (cliente_id, marca, modelo, imei),
     )
     conn.commit()
     return cur.lastrowid
 
 
+def listar_dispositivos() -> List[Tuple[int, int, str, str, str, Optional[str]]]:
+    cur = _ensure_conn().cursor()
+    cur.execute(
+        """
+        SELECT d.id, d.cliente_id, c.nombre, d.marca, d.modelo, d.imei
+        FROM dispositivos d
+        JOIN clientes c ON d.cliente_id = c.id
+        ORDER BY d.id
+        """
+    )
+    return cur.fetchall()
+
+
+def update_device(device_id: int, *, marca: Optional[str] = None, modelo: Optional[str] = None, imei: Optional[str] = None) -> bool:
+    if marca is None and modelo is None and imei is None:
+        return False
+    fields = []
+    params: List[object] = []
+    if marca is not None:
+        fields.append("marca = ?")
+        params.append(marca)
+    if modelo is not None:
+        fields.append("modelo = ?")
+        params.append(modelo)
+    if imei is not None:
+        fields.append("imei = ?")
+        params.append(imei)
+    params.append(device_id)
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute(f"UPDATE dispositivos SET {', '.join(fields)} WHERE id = ?", params)
+    conn.commit()
+    return cur.rowcount > 0
+
+
+def delete_device(device_id: int) -> bool:
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM dispositivos WHERE id = ?", (device_id,))
+    conn.commit()
+    return cur.rowcount > 0
+
+
 def add_repair(cliente_nombre: str, marca: str, modelo: str, descripcion: str, costo: float, estado: str) -> int:
     cid = add_client(cliente_nombre)
-    did = add_device(cid, marca, modelo)
+    did = add_device(cid, marca, modelo, None)
     conn = _ensure_conn()
     cur = conn.cursor()
     cur.execute(
