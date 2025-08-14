@@ -6,11 +6,24 @@
   <property name="windowTitle"><string>Inventario Base</string></property>
 
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayoutMain">
+     <layout class="QVBoxLayout" name="verticalLayoutMain">
+      <property name="spacing"><number>12</number></property>
+      <property name="leftMargin"><number>12</number></property>
+      <property name="topMargin"><number>12</number></property>
+      <property name="rightMargin"><number>12</number></property>
+      <property name="bottomMargin"><number>12</number></property>
     <item>
      <widget class="QGroupBox" name="groupBoxResumen">
       <property name="title"><string>Resumen</string></property>
       <layout class="QFormLayout" name="formLayoutResumen">
+       <property name="labelAlignment">
+        <set>Qt::AlignRight|Qt::AlignVCenter</set>
+       </property>
+       <property name="spacing"><number>12</number></property>
+       <property name="leftMargin"><number>12</number></property>
+       <property name="topMargin"><number>12</number></property>
+       <property name="rightMargin"><number>12</number></property>
+       <property name="bottomMargin"><number>12</number></property>
        <item row="0" column="0"><widget class="QLabel" name="labelClientes"><property name="text"><string>Total clientes:</string></property></widget></item>
        <item row="0" column="1"><widget class="QLabel" name="label_total_clientes"><property name="text"><string>0</string></property></widget></item>
 
@@ -40,8 +53,14 @@
     <addaction name="actionInventario"/>
     <addaction name="actionReparaciones"/>
    </widget>
+   <widget class="QMenu" name="menuVer">
+    <property name="title"><string>&amp;Ver</string></property>
+    <addaction name="actionTemaClaro"/>
+    <addaction name="actionTemaOscuro"/>
+   </widget>
    <addaction name="menuArchivo"/>
    <addaction name="menuModulos"/>
+   <addaction name="menuVer"/>
   </widget>
 
   <widget class="QStatusBar" name="statusbar"/>
@@ -51,6 +70,8 @@
   <action name="actionDispositivos"><property name="text"><string>Dispositivos</string></property></action>
   <action name="actionInventario"><property name="text"><string>Inventario</string></property></action>
   <action name="actionReparaciones"><property name="text"><string>Reparaciones</string></property></action>
+  <action name="actionTemaClaro"><property name="text"><string>Tema claro</string></property></action>
+  <action name="actionTemaOscuro"><property name="text"><string>Tema oscuro</string></property></action>
  </widget>
  <resources/>
  <connections/>

@@ -6,67 +6,131 @@
    <string>Clientes</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing"><number>12</number></property>
+   <property name="leftMargin"><number>12</number></property>
+   <property name="topMargin"><number>12</number></property>
+   <property name="rightMargin"><number>12</number></property>
+   <property name="bottomMargin"><number>12</number></property>
    <item>
     <layout class="QFormLayout" name="formLayout">
+     <property name="labelAlignment">
+      <set>Qt::AlignRight|Qt::AlignVCenter</set>
+     </property>
+     <property name="spacing"><number>12</number></property>
+     <property name="leftMargin"><number>12</number></property>
+     <property name="topMargin"><number>12</number></property>
+     <property name="rightMargin"><number>12</number></property>
+     <property name="bottomMargin"><number>12</number></property>
      <item row="0" column="0">
       <widget class="QLabel" name="labelNombre">
        <property name="text">
-        <string>Nombre</string>
+        <string>&amp;Nombre</string>
+       </property>
+       <property name="buddy">
+        <cstring>lineEditNombre</cstring>
        </property>
       </widget>
      </item>
      <item row="0" column="1">
-      <widget class="QLineEdit" name="lineEditNombre"/>
+      <widget class="QLineEdit" name="lineEditNombre">
+       <property name="placeholderText">
+        <string>Nombre del cliente...</string>
+       </property>
+       <property name="accessibleName">
+        <string>nombre</string>
+       </property>
+      </widget>
      </item>
      <item row="1" column="0">
       <widget class="QLabel" name="labelTelefono">
        <property name="text">
-        <string>Teléfono</string>
+        <string>&amp;Teléfono</string>
+       </property>
+       <property name="buddy">
+        <cstring>lineEditTelefono</cstring>
        </property>
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QLineEdit" name="lineEditTelefono"/>
+      <widget class="QLineEdit" name="lineEditTelefono">
+       <property name="placeholderText">
+        <string>555123456</string>
+       </property>
+       <property name="accessibleName">
+        <string>telefono</string>
+       </property>
+      </widget>
      </item>
      <item row="2" column="0">
       <widget class="QLabel" name="labelEmail">
        <property name="text">
-        <string>Email</string>
+        <string>&amp;Email</string>
+       </property>
+       <property name="buddy">
+        <cstring>lineEditEmail</cstring>
        </property>
       </widget>
      </item>
      <item row="2" column="1">
-      <widget class="QLineEdit" name="lineEditEmail"/>
+      <widget class="QLineEdit" name="lineEditEmail">
+       <property name="placeholderText">
+        <string>correo@ejemplo.com</string>
+       </property>
+       <property name="accessibleName">
+        <string>email</string>
+       </property>
+      </widget>
      </item>
      <item row="3" column="0">
       <widget class="QLabel" name="labelDireccion">
        <property name="text">
-        <string>Dirección</string>
+        <string>&amp;Dirección</string>
+       </property>
+       <property name="buddy">
+        <cstring>lineEditDireccion</cstring>
        </property>
       </widget>
      </item>
      <item row="3" column="1">
-      <widget class="QLineEdit" name="lineEditDireccion"/>
+      <widget class="QLineEdit" name="lineEditDireccion">
+       <property name="placeholderText">
+        <string>Calle...</string>
+       </property>
+      </widget>
      </item>
      <item row="4" column="0">
       <widget class="QLabel" name="labelNif">
        <property name="text">
-        <string>NIF</string>
+        <string>&amp;NIF</string>
+       </property>
+       <property name="buddy">
+        <cstring>lineEditNif</cstring>
        </property>
       </widget>
      </item>
      <item row="4" column="1">
-      <widget class="QLineEdit" name="lineEditNif"/>
+      <widget class="QLineEdit" name="lineEditNif">
+       <property name="placeholderText">
+        <string>00000000X</string>
+       </property>
+      </widget>
      </item>
      <item row="5" column="0">
       <widget class="QLabel" name="labelNotas">
        <property name="text">
-        <string>Notas</string>
+        <string>&amp;Notas</string>
+       </property>
+       <property name="buddy">
+        <cstring>plainTextEditNotas</cstring>
        </property>
       </widget>
      </item>
      <item row="5" column="1">
-      <widget class="QPlainTextEdit" name="plainTextEditNotas"/>
+      <widget class="QPlainTextEdit" name="plainTextEditNotas">
+       <property name="placeholderText">
+        <string>Notas adicionales...</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>
@@ -80,26 +144,33 @@
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="btnGuardar">
+     <widget class="QPushButton" name="btnGuardar">
        <property name="text">
         <string>Guardar cambios</string>
        </property>
-      </widget>
+       <property name="default"><bool>true</bool></property>
+     </widget>
      </item>
     </layout>
    </item>
    <item>
     <widget class="QTableView" name="tableClientes">
+     <property name="alternatingRowColors"><bool>true</bool></property>
      <property name="selectionBehavior">
       <enum>QAbstractItemView::SelectRows</enum>
+     </property>
+     <property name="selectionMode">
+      <enum>QAbstractItemView::SingleSelection</enum>
      </property>
      <property name="editTriggers">
       <set>QAbstractItemView::NoEditTriggers</set>
      </property>
+     <property name="sortingEnabled"><bool>true</bool></property>
+     <attribute name="horizontalHeaderStretchLastSection"><bool>true</bool></attribute>
     </widget>
    </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_2">
+  <item>
+   <layout class="QHBoxLayout" name="horizontalLayout_2">
      <item>
       <widget class="QPushButton" name="btnEliminar">
        <property name="text">
@@ -128,10 +199,23 @@
       </widget>
      </item>
     </layout>
-   </item>
-  </layout>
- </widget>
- <resources/>
- <connections/>
-</ui>
+  </item>
+   </layout>
+  </widget>
+  <tabstops>
+   <tabstop>lineEditNombre</tabstop>
+   <tabstop>lineEditTelefono</tabstop>
+   <tabstop>lineEditEmail</tabstop>
+   <tabstop>lineEditDireccion</tabstop>
+   <tabstop>lineEditNif</tabstop>
+   <tabstop>plainTextEditNotas</tabstop>
+   <tabstop>btnAgregar</tabstop>
+   <tabstop>btnGuardar</tabstop>
+   <tabstop>tableClientes</tabstop>
+   <tabstop>btnEliminar</tabstop>
+   <tabstop>btnCerrar</tabstop>
+  </tabstops>
+  <resources/>
+  <connections/>
+ </ui>
 

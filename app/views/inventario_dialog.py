@@ -6,9 +6,12 @@ from PySide6.QtWidgets import (
     QPushButton,
     QHBoxLayout,
     QLabel,
+    QMainWindow,
 )
-from PySide6.QtGui import QStandardItemModel, QStandardItem
+from PySide6.QtGui import QStandardItemModel, QStandardItem, QIcon
 from PySide6.QtCore import Qt
+
+from app.resources import icons_rc  # noqa: F401
 
 from app.ui.ui_inventario import Ui_InventarioDialog
 from app.data import db
@@ -20,6 +23,11 @@ class InventarioDialog(QDialog):
         super().__init__(parent)
         self.ui = Ui_InventarioDialog()
         self.ui.setupUi(self)
+
+        self.setWindowIcon(QIcon(":/icons/box.svg"))
+        self._set_button_icon(self.ui.btnAgregar, ":/icons/box.svg")
+        self._set_button_icon(self.ui.btnEliminar, ":/icons/exit.svg")
+        self._set_button_icon(self.ui.btnCerrar, ":/icons/exit.svg")
 
         self._updating = False
 
@@ -51,6 +59,21 @@ class InventarioDialog(QDialog):
         self._setup_filters()
 
         self._load_products()
+
+    def _set_button_icon(self, btn: QPushButton, resource: str) -> None:
+        icon = QIcon(resource)
+        if not icon.isNull():
+            btn.setIcon(icon)
+
+    def _show_status(self, text: str) -> None:
+        parent = self.parent()
+        if isinstance(parent, QMainWindow):
+            parent.statusBar().showMessage(text, 3000)
+
+    def _set_error(self, widget: QLineEdit, state: bool) -> None:
+        widget.setProperty("error", state)
+        widget.style().unpolish(widget)
+        widget.style().polish(widget)
 
     def _clear_inputs(self) -> None:
         self.ui.lineEditSKU.clear()
@@ -146,8 +169,10 @@ class InventarioDialog(QDialog):
         proveedor = self.ui.lineProveedor.text().strip() or None
 
         if not nombre:
+            self._set_error(self.ui.lineEditNombre, True)
             QMessageBox.warning(self, "Validación", "El nombre no puede estar vacío.")
             return
+        self._set_error(self.ui.lineEditNombre, False)
         if costo < 0 or precio < 0:
             QMessageBox.warning(self, "Validación", "Costo y precio deben ser >= 0.")
             return
@@ -168,6 +193,7 @@ class InventarioDialog(QDialog):
             return
         self._clear_inputs()
         self._load_products()
+        self._show_status("Producto agregado")
 
     def _item_changed(self, item) -> None:
         if self._updating:
@@ -213,6 +239,7 @@ class InventarioDialog(QDialog):
             costo = float(self.model.item(row, 5).text())
             precio = float(self.model.item(row, 6).text())
             self.model.item(row, 6).setToolTip(f"Margen: {precio - costo:.2f}")
+        self._show_status("Producto actualizado")
 
     def eliminar(self) -> None:
         index = self.ui.tableProductos.currentIndex()
@@ -232,3 +259,4 @@ class InventarioDialog(QDialog):
         ):
             db.delete_product(pid)
             self._load_products()
+            self._show_status("Producto eliminado")

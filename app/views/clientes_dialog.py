@@ -6,9 +6,12 @@ from PySide6.QtWidgets import (
     QPushButton,
     QHBoxLayout,
     QLabel,
+    QMainWindow,
 )
-from PySide6.QtGui import QRegularExpressionValidator, QStandardItemModel, QStandardItem
+from PySide6.QtGui import QRegularExpressionValidator, QStandardItemModel, QStandardItem, QIcon
 from PySide6.QtCore import QRegularExpression, Qt
+
+from app.resources import icons_rc  # noqa: F401
 
 from app.ui.ui_clientes import Ui_ClientesDialog
 from app.data import db
@@ -20,6 +23,12 @@ class ClientesDialog(QDialog):
         super().__init__(parent)
         self.ui = Ui_ClientesDialog()
         self.ui.setupUi(self)
+
+        self.setWindowIcon(QIcon(":/icons/users.svg"))
+        self._set_button_icon(self.ui.btnAgregar, ":/icons/users.svg")
+        self._set_button_icon(self.ui.btnGuardar, ":/icons/users.svg")
+        self._set_button_icon(self.ui.btnEliminar, ":/icons/exit.svg")
+        self._set_button_icon(self.ui.btnCerrar, ":/icons/exit.svg")
 
         phone_regex = QRegularExpression(r"^$|[0-9 +]+$")
         email_regex = QRegularExpression(r"^$|[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -46,6 +55,21 @@ class ClientesDialog(QDialog):
 
         self._clientes = {}
         self._load_clientes()
+
+    def _set_button_icon(self, btn: QPushButton, resource: str) -> None:
+        icon = QIcon(resource)
+        if not icon.isNull():
+            btn.setIcon(icon)
+
+    def _show_status(self, text: str) -> None:
+        parent = self.parent()
+        if isinstance(parent, QMainWindow):
+            parent.statusBar().showMessage(text, 3000)
+
+    def _set_error(self, widget: QLineEdit, state: bool) -> None:
+        widget.setProperty("error", state)
+        widget.style().unpolish(widget)
+        widget.style().polish(widget)
 
     def _setup_filters(self) -> None:
         layout = QHBoxLayout()
@@ -114,14 +138,20 @@ class ClientesDialog(QDialog):
         notas = self.ui.plainTextEditNotas.toPlainText().strip()
 
         if not nombre:
+            self._set_error(self.ui.lineEditNombre, True)
             QMessageBox.warning(self, "Validación", "El nombre no puede estar vacío.")
             return
+        self._set_error(self.ui.lineEditNombre, False)
         if email and not self.ui.lineEditEmail.hasAcceptableInput():
+            self._set_error(self.ui.lineEditEmail, True)
             QMessageBox.warning(self, "Validación", "Email no válido.")
             return
+        self._set_error(self.ui.lineEditEmail, False)
         if telefono and not self.ui.lineEditTelefono.hasAcceptableInput():
+            self._set_error(self.ui.lineEditTelefono, True)
             QMessageBox.warning(self, "Validación", "Teléfono no válido.")
             return
+        self._set_error(self.ui.lineEditTelefono, False)
 
         db.add_cliente(
             nombre,
@@ -133,6 +163,7 @@ class ClientesDialog(QDialog):
         )
         self._clear_form()
         self._load_clientes()
+        self._show_status("Cliente agregado")
 
     def cargar_seleccion(self) -> None:
         index = self.ui.tableClientes.currentIndex()
@@ -171,14 +202,20 @@ class ClientesDialog(QDialog):
         notas = self.ui.plainTextEditNotas.toPlainText().strip()
 
         if not nombre:
+            self._set_error(self.ui.lineEditNombre, True)
             QMessageBox.warning(self, "Validación", "El nombre no puede estar vacío.")
             return
+        self._set_error(self.ui.lineEditNombre, False)
         if email and not self.ui.lineEditEmail.hasAcceptableInput():
+            self._set_error(self.ui.lineEditEmail, True)
             QMessageBox.warning(self, "Validación", "Email no válido.")
             return
+        self._set_error(self.ui.lineEditEmail, False)
         if telefono and not self.ui.lineEditTelefono.hasAcceptableInput():
+            self._set_error(self.ui.lineEditTelefono, True)
             QMessageBox.warning(self, "Validación", "Teléfono no válido.")
             return
+        self._set_error(self.ui.lineEditTelefono, False)
 
         db.update_cliente(
             cid,
@@ -191,6 +228,7 @@ class ClientesDialog(QDialog):
         )
         self._clear_form()
         self._load_clientes()
+        self._show_status("Cliente actualizado")
 
     def eliminar(self) -> None:
         index = self.ui.tableClientes.currentIndex()
@@ -205,4 +243,5 @@ class ClientesDialog(QDialog):
             db.delete_cliente(cid)
             self._clear_form()
             self._load_clientes()
+            self._show_status("Cliente eliminado")
 

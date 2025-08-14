@@ -25,8 +25,11 @@ class Ui_DispositivosDialog(object):
         if not DispositivosDialog.objectName():
             DispositivosDialog.setObjectName(u"DispositivosDialog")
         self.verticalLayout = QVBoxLayout(DispositivosDialog)
+        self.verticalLayout.setSpacing(12)
         self.verticalLayout.setObjectName(u"verticalLayout")
+        self.verticalLayout.setContentsMargins(12, 12, 12, 12)
         self.layoutInputs = QHBoxLayout()
+        self.layoutInputs.setSpacing(12)
         self.layoutInputs.setObjectName(u"layoutInputs")
         self.comboCliente = QComboBox(DispositivosDialog)
         self.comboCliente.setObjectName(u"comboCliente")
@@ -73,7 +76,11 @@ class Ui_DispositivosDialog(object):
 
         self.tableDispositivos = QTableView(DispositivosDialog)
         self.tableDispositivos.setObjectName(u"tableDispositivos")
+        self.tableDispositivos.setAlternatingRowColors(True)
         self.tableDispositivos.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.tableDispositivos.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.tableDispositivos.setSortingEnabled(True)
+        self.tableDispositivos.horizontalHeader().setStretchLastSection(True)
 
         self.verticalLayout.addWidget(self.tableDispositivos)
 
@@ -96,6 +103,16 @@ class Ui_DispositivosDialog(object):
 
         self.verticalLayout.addLayout(self.layoutButtons)
 
+        QWidget.setTabOrder(self.comboCliente, self.lineEditMarca)
+        QWidget.setTabOrder(self.lineEditMarca, self.lineEditModelo)
+        QWidget.setTabOrder(self.lineEditModelo, self.lineEditIMEI)
+        QWidget.setTabOrder(self.lineEditIMEI, self.lineEditSerie)
+        QWidget.setTabOrder(self.lineEditSerie, self.lineEditColor)
+        QWidget.setTabOrder(self.lineEditColor, self.lineEditAccesorios)
+        QWidget.setTabOrder(self.lineEditAccesorios, self.btnAgregar)
+        QWidget.setTabOrder(self.btnAgregar, self.tableDispositivos)
+        QWidget.setTabOrder(self.tableDispositivos, self.btnEliminar)
+        QWidget.setTabOrder(self.btnEliminar, self.btnCerrar)
 
         self.retranslateUi(DispositivosDialog)
 
@@ -104,6 +121,21 @@ class Ui_DispositivosDialog(object):
 
     def retranslateUi(self, DispositivosDialog):
         DispositivosDialog.setWindowTitle(QCoreApplication.translate("DispositivosDialog", u"Dispositivos", None))
+#if QT_CONFIG(accessibility)
+        self.comboCliente.setAccessibleName(QCoreApplication.translate("DispositivosDialog", u"cliente", None))
+#endif // QT_CONFIG(accessibility)
+        self.lineEditMarca.setPlaceholderText(QCoreApplication.translate("DispositivosDialog", u"Marca", None))
+#if QT_CONFIG(accessibility)
+        self.lineEditMarca.setAccessibleName(QCoreApplication.translate("DispositivosDialog", u"marca", None))
+#endif // QT_CONFIG(accessibility)
+        self.lineEditModelo.setPlaceholderText(QCoreApplication.translate("DispositivosDialog", u"Modelo", None))
+#if QT_CONFIG(accessibility)
+        self.lineEditModelo.setAccessibleName(QCoreApplication.translate("DispositivosDialog", u"modelo", None))
+#endif // QT_CONFIG(accessibility)
+        self.lineEditIMEI.setPlaceholderText(QCoreApplication.translate("DispositivosDialog", u"IMEI", None))
+        self.lineEditSerie.setPlaceholderText(QCoreApplication.translate("DispositivosDialog", u"N\u00b0 Serie", None))
+        self.lineEditColor.setPlaceholderText(QCoreApplication.translate("DispositivosDialog", u"Color", None))
+        self.lineEditAccesorios.setPlaceholderText(QCoreApplication.translate("DispositivosDialog", u"Accesorios", None))
         self.btnAgregar.setText(QCoreApplication.translate("DispositivosDialog", u"Agregar", None))
         self.btnEliminar.setText(QCoreApplication.translate("DispositivosDialog", u"Eliminar", None))
         self.btnCerrar.setText(QCoreApplication.translate("DispositivosDialog", u"Cerrar", None))
