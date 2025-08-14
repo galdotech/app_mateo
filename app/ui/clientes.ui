@@ -89,36 +89,13 @@
     </layout>
    </item>
    <item>
-    <widget class="QTableWidget" name="tableClientes">
-     <property name="columnCount">
-      <number>4</number>
-     </property>
+    <widget class="QTableView" name="tableClientes">
      <property name="selectionBehavior">
       <enum>QAbstractItemView::SelectRows</enum>
      </property>
      <property name="editTriggers">
       <set>QAbstractItemView::NoEditTriggers</set>
      </property>
-     <column>
-      <property name="text">
-       <string>ID</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Nombre</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Teléfono</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Email</string>
-      </property>
-     </column>
     </widget>
    </item>
    <item>

@@ -18,8 +18,7 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QComboBox, QDialog,
     QDoubleSpinBox, QGridLayout, QHBoxLayout, QHeaderView,
     QLineEdit, QPushButton, QSizePolicy, QSpacerItem,
-    QSpinBox, QTableWidget, QTableWidgetItem, QVBoxLayout,
-    QWidget)
+    QSpinBox, QTableView, QVBoxLayout, QWidget)
 
 class Ui_InventarioDialog(object):
     def setupUi(self, InventarioDialog):
@@ -89,29 +88,8 @@ class Ui_InventarioDialog(object):
 
         self.verticalLayout.addLayout(self.layoutInputs)
 
-        self.tableProductos = QTableWidget(InventarioDialog)
-        if (self.tableProductos.columnCount() < 9):
-            self.tableProductos.setColumnCount(9)
-        __qtablewidgetitem = QTableWidgetItem()
-        self.tableProductos.setHorizontalHeaderItem(0, __qtablewidgetitem)
-        __qtablewidgetitem1 = QTableWidgetItem()
-        self.tableProductos.setHorizontalHeaderItem(1, __qtablewidgetitem1)
-        __qtablewidgetitem2 = QTableWidgetItem()
-        self.tableProductos.setHorizontalHeaderItem(2, __qtablewidgetitem2)
-        __qtablewidgetitem3 = QTableWidgetItem()
-        self.tableProductos.setHorizontalHeaderItem(3, __qtablewidgetitem3)
-        __qtablewidgetitem4 = QTableWidgetItem()
-        self.tableProductos.setHorizontalHeaderItem(4, __qtablewidgetitem4)
-        __qtablewidgetitem5 = QTableWidgetItem()
-        self.tableProductos.setHorizontalHeaderItem(5, __qtablewidgetitem5)
-        __qtablewidgetitem6 = QTableWidgetItem()
-        self.tableProductos.setHorizontalHeaderItem(6, __qtablewidgetitem6)
-        __qtablewidgetitem7 = QTableWidgetItem()
-        self.tableProductos.setHorizontalHeaderItem(7, __qtablewidgetitem7)
-        __qtablewidgetitem8 = QTableWidgetItem()
-        self.tableProductos.setHorizontalHeaderItem(8, __qtablewidgetitem8)
+        self.tableProductos = QTableView(InventarioDialog)
         self.tableProductos.setObjectName(u"tableProductos")
-        self.tableProductos.setColumnCount(9)
         self.tableProductos.setSelectionBehavior(QAbstractItemView.SelectRows)
 
         self.verticalLayout.addWidget(self.tableProductos)
@@ -144,24 +122,6 @@ class Ui_InventarioDialog(object):
     def retranslateUi(self, InventarioDialog):
         InventarioDialog.setWindowTitle(QCoreApplication.translate("InventarioDialog", u"Inventario", None))
         self.btnAgregar.setText(QCoreApplication.translate("InventarioDialog", u"Agregar", None))
-        ___qtablewidgetitem = self.tableProductos.horizontalHeaderItem(0)
-        ___qtablewidgetitem.setText(QCoreApplication.translate("InventarioDialog", u"SKU", None));
-        ___qtablewidgetitem1 = self.tableProductos.horizontalHeaderItem(1)
-        ___qtablewidgetitem1.setText(QCoreApplication.translate("InventarioDialog", u"Nombre", None));
-        ___qtablewidgetitem2 = self.tableProductos.horizontalHeaderItem(2)
-        ___qtablewidgetitem2.setText(QCoreApplication.translate("InventarioDialog", u"Categor\u00eda", None));
-        ___qtablewidgetitem3 = self.tableProductos.horizontalHeaderItem(3)
-        ___qtablewidgetitem3.setText(QCoreApplication.translate("InventarioDialog", u"Cantidad", None));
-        ___qtablewidgetitem4 = self.tableProductos.horizontalHeaderItem(4)
-        ___qtablewidgetitem4.setText(QCoreApplication.translate("InventarioDialog", u"Stock M\u00edn.", None));
-        ___qtablewidgetitem5 = self.tableProductos.horizontalHeaderItem(5)
-        ___qtablewidgetitem5.setText(QCoreApplication.translate("InventarioDialog", u"Costo", None));
-        ___qtablewidgetitem6 = self.tableProductos.horizontalHeaderItem(6)
-        ___qtablewidgetitem6.setText(QCoreApplication.translate("InventarioDialog", u"Precio", None));
-        ___qtablewidgetitem7 = self.tableProductos.horizontalHeaderItem(7)
-        ___qtablewidgetitem7.setText(QCoreApplication.translate("InventarioDialog", u"Ubicaci\u00f3n", None));
-        ___qtablewidgetitem8 = self.tableProductos.horizontalHeaderItem(8)
-        ___qtablewidgetitem8.setText(QCoreApplication.translate("InventarioDialog", u"Proveedor", None));
         self.btnEliminar.setText(QCoreApplication.translate("InventarioDialog", u"Eliminar", None))
         self.btnCerrar.setText(QCoreApplication.translate("InventarioDialog", u"Cerrar", None))
     # retranslateUi
