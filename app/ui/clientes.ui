@@ -7,14 +7,82 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout">
-     <item>
+    <layout class="QFormLayout" name="formLayout">
+     <item row="0" column="0">
+      <widget class="QLabel" name="labelNombre">
+       <property name="text">
+        <string>Nombre</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
       <widget class="QLineEdit" name="lineEditNombre"/>
      </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="labelTelefono">
+       <property name="text">
+        <string>Teléfono</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLineEdit" name="lineEditTelefono"/>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="labelEmail">
+       <property name="text">
+        <string>Email</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QLineEdit" name="lineEditEmail"/>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="labelDireccion">
+       <property name="text">
+        <string>Dirección</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QLineEdit" name="lineEditDireccion"/>
+     </item>
+     <item row="4" column="0">
+      <widget class="QLabel" name="labelNif">
+       <property name="text">
+        <string>NIF</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1">
+      <widget class="QLineEdit" name="lineEditNif"/>
+     </item>
+     <item row="5" column="0">
+      <widget class="QLabel" name="labelNotas">
+       <property name="text">
+        <string>Notas</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="1">
+      <widget class="QPlainTextEdit" name="plainTextEditNotas"/>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayoutBtns">
      <item>
       <widget class="QPushButton" name="btnAgregar">
        <property name="text">
         <string>Agregar</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnGuardar">
+       <property name="text">
+        <string>Guardar cambios</string>
        </property>
       </widget>
      </item>
@@ -23,7 +91,7 @@
    <item>
     <widget class="QTableWidget" name="tableClientes">
      <property name="columnCount">
-      <number>2</number>
+      <number>4</number>
      </property>
      <property name="selectionBehavior">
       <enum>QAbstractItemView::SelectRows</enum>
@@ -39,6 +107,16 @@
      <column>
       <property name="text">
        <string>Nombre</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Teléfono</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Email</string>
       </property>
      </column>
     </widget>
@@ -79,3 +157,4 @@
  <resources/>
  <connections/>
 </ui>
+
