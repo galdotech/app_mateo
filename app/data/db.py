@@ -278,7 +278,10 @@ def add_cliente(
     direccion: Optional[str] = None,
     nif: Optional[str] = None,
     notas: Optional[str] = None,
-) -> int:
+) -> Optional[int]:
+    existing_id = find_client_by_name(nombre)
+    if existing_id is not None:
+        return None
     conn = _ensure_conn()
     cur = conn.cursor()
     cur.execute(
