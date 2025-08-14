@@ -4,6 +4,7 @@ from app.ui.ui_main_window import Ui_MainWindow
 from app.data import db
 from app.views.clientes_dialog import ClientesDialog
 from app.views.inventario_dialog import InventarioDialog
+from app.views.reparaciones_dialog import ReparacionesDialog
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -16,7 +17,7 @@ class MainWindow(QMainWindow):
         self.ui.actionClientes.triggered.connect(self._open_clientes)
         self.ui.actionDispositivos.triggered.connect(lambda: self._no_impl("Dispositivos"))
         self.ui.actionInventario.triggered.connect(self._open_inventario)
-        self.ui.actionReparaciones.triggered.connect(lambda: self._no_impl("Reparaciones"))
+        self.ui.actionReparaciones.triggered.connect(self._open_reparaciones)
 
         # Resumen inicial
         self._refresh_summary()
@@ -30,6 +31,11 @@ class MainWindow(QMainWindow):
         dlg = InventarioDialog(self)
         dlg.exec()
         self._refresh_summary()
+
+    def _open_reparaciones(self):
+        dlg = ReparacionesDialog(self)
+        if dlg.exec():
+            self._refresh_summary()
 
     def _refresh_summary(self):
         self.ui.label_total_clientes.setText(str(db.contar_clientes()))

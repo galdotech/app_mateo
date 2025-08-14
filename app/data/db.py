@@ -44,10 +44,16 @@ def _create_tables(conn: sqlite3.Connection) -> None:
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             dispositivo_id INTEGER NOT NULL,
             descripcion TEXT,
+            costo REAL DEFAULT 0,
             estado TEXT DEFAULT 'Pendiente',
             FOREIGN KEY (dispositivo_id) REFERENCES dispositivos(id) ON DELETE CASCADE
         )
     """)
+    # Ensure column 'costo' exists
+    cur.execute("PRAGMA table_info(reparaciones)")
+    cols = [row[1] for row in cur.fetchall()]
+    if "costo" not in cols:
+        cur.execute("ALTER TABLE reparaciones ADD COLUMN costo REAL DEFAULT 0")
     conn.commit()
 
 # API pública
@@ -94,6 +100,59 @@ def delete_cliente(cliente_id: int) -> bool:
     cur.execute("DELETE FROM clientes WHERE id = ?", (cliente_id,))
     conn.commit()
     return cur.rowcount > 0
+
+
+# --- Dispositivos y Reparaciones ---
+
+def find_client_by_name(nombre: str) -> Optional[int]:
+    cur = _ensure_conn().cursor()
+    cur.execute("SELECT id FROM clientes WHERE nombre = ?", (nombre,))
+    row = cur.fetchone()
+    return row[0] if row else None
+
+
+def add_client(nombre: str) -> int:
+    cid = find_client_by_name(nombre)
+    if cid is not None:
+        return cid
+    return add_cliente(nombre)
+
+
+def find_device(cliente_id: int, marca: str, modelo: str) -> Optional[int]:
+    cur = _ensure_conn().cursor()
+    cur.execute(
+        "SELECT id FROM dispositivos WHERE cliente_id = ? AND marca = ? AND modelo = ?",
+        (cliente_id, marca, modelo),
+    )
+    row = cur.fetchone()
+    return row[0] if row else None
+
+
+def add_device(cliente_id: int, marca: str, modelo: str) -> int:
+    did = find_device(cliente_id, marca, modelo)
+    if did is not None:
+        return did
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO dispositivos (cliente_id, marca, modelo) VALUES (?, ?, ?)",
+        (cliente_id, marca, modelo),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def add_repair(cliente_nombre: str, marca: str, modelo: str, descripcion: str, costo: float, estado: str) -> int:
+    cid = add_client(cliente_nombre)
+    did = add_device(cid, marca, modelo)
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO reparaciones (dispositivo_id, descripcion, costo, estado) VALUES (?, ?, ?, ?)",
+        (did, descripcion, costo, estado),
+    )
+    conn.commit()
+    return cur.lastrowid
 
 
 # --- Inventario ---
