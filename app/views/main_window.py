@@ -18,9 +18,10 @@ logger = logging.getLogger(__name__)
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, settings: QSettings):
+    def __init__(self, settings: QSettings, user_role: str):
         super().__init__()
         self.settings = settings
+        self.user_role = user_role
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
@@ -52,8 +53,26 @@ class MainWindow(QMainWindow):
         self.ui.btnNuevaReparacion.clicked.connect(self._open_reparaciones)
         self.ui.btnActualizar.clicked.connect(self.refresh_all)
 
+        # Permisos según rol
+        self._apply_role_permissions()
+
         # Resumen inicial
         self.refresh_all()
+
+    def _apply_role_permissions(self) -> None:
+        if self.user_role != "admin":
+            for action in [
+                self.ui.actionClientes,
+                self.ui.actionDispositivos,
+                self.ui.actionInventario,
+            ]:
+                action.setEnabled(False)
+            for btn in [
+                self.ui.btnClientes,
+                self.ui.btnDispositivos,
+                self.ui.btnInventario,
+            ]:
+                btn.setEnabled(False)
 
     def _load_dialog_class(self, base: str, class_name: str) -> Optional[Type[QDialog]]:
         """Try to import a dialog class handling plural/singular variations."""
