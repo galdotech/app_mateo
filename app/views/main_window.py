@@ -19,7 +19,7 @@ from PySide6.QtCore import QSettings, Qt, QTimer
 
 from app.resources import icons_rc  # noqa: F401
 from app.ui.ui_main_window import Ui_MainWindow
-from app.data import db, export_service
+from app.data import db, export_service, summary_service
 from .notificaciones import notify_low_stock, notify_pending_repairs
 
 logger = logging.getLogger(__name__)
@@ -178,7 +178,7 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage("Panel actualizado", 2500)
 
     def refresh_summary(self):
-        total_clientes, total_dispositivos, total_productos, total_reparaciones = db.get_counts()
+        total_clientes, total_dispositivos, total_productos, total_reparaciones = summary_service.get_counts()
         self._set_label_text(["label_total_clientes", "labelTotalClientes"], total_clientes)
         self._set_label_text(["label_total_dispositivos", "labelTotalDispositivos"], total_dispositivos)
         self._set_label_text(["label_total_productos", "labelTotalProductos"], total_productos)
