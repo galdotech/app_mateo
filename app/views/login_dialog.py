@@ -51,8 +51,8 @@ class LoginDialog(QDialog):
         if user is None:
             QMessageBox.warning(self, "Login", "Usuario no encontrado.")
             return
-        _, password_hash, rol = user
-        if db.hash_password(password) != password_hash:
+        _, password_hash, salt, rol = user
+        if not db.verify_password(password, password_hash, salt):
             QMessageBox.warning(self, "Login", "Contraseña incorrecta.")
             return
         self.user_role = rol

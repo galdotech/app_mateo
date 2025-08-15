@@ -2,15 +2,30 @@
 import sqlite3
 import os
 import hashlib
+import hmac
 from typing import Optional, List, Tuple
 
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "inventario_app.db")
 _conn: Optional[sqlite3.Connection] = None
 
 
-def hash_password(password: str) -> str:
-    """Return a sha256 hash for the given password."""
-    return hashlib.sha256(password.encode("utf-8")).hexdigest()
+def hash_password(password: str, salt: bytes | None = None) -> Tuple[str, str]:
+    """Return a PBKDF2 hash and salt for the given password."""
+    if salt is None:
+        salt = os.urandom(16)
+    hashed = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 100000)
+    return hashed.hex(), salt.hex()
+
+
+def verify_password(password: str, password_hash: str, salt: str) -> bool:
+    """Verify a password against the stored hash and salt.
+
+    Falls back to legacy sha256 hashes if no salt is stored.
+    """
+    if not salt:
+        return hashlib.sha256(password.encode("utf-8")).hexdigest() == password_hash
+    new_hash, _ = hash_password(password, bytes.fromhex(salt))
+    return hmac.compare_digest(new_hash, password_hash)
 
 def _ensure_conn() -> sqlite3.Connection:
     global _conn
@@ -78,16 +93,35 @@ def _create_tables(conn: sqlite3.Connection) -> None:
         CREATE TABLE IF NOT EXISTS usuarios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL,
+            password_hash TEXT,
+            salt TEXT,
             rol TEXT NOT NULL
         )
         """
     )
+    cur.execute("PRAGMA table_info(usuarios)")
+    columns = [row[1] for row in cur.fetchall()]
+    if "password_hash" not in columns:
+        cur.execute("ALTER TABLE usuarios ADD COLUMN password_hash TEXT")
+    if "salt" not in columns:
+        cur.execute("ALTER TABLE usuarios ADD COLUMN salt TEXT")
+    if "password" in columns:
+        cur.execute("SELECT id, nombre, password FROM usuarios")
+        for uid, nombre, pwd in cur.fetchall():
+            if nombre == "admin" and pwd == hashlib.sha256("admin".encode("utf-8")).hexdigest():
+                pwd_hash, salt = hash_password("admin")
+            else:
+                pwd_hash, salt = pwd, ""
+            cur.execute(
+                "UPDATE usuarios SET password_hash = ?, salt = ? WHERE id = ?",
+                (pwd_hash, salt, uid),
+            )
     cur.execute("SELECT COUNT(*) FROM usuarios")
     if cur.fetchone()[0] == 0:
+        pwd_hash, salt = hash_password("admin")
         cur.execute(
-            "INSERT INTO usuarios (nombre, password, rol) VALUES (?, ?, ?)",
-            ("admin", hash_password("admin"), "admin"),
+            "INSERT INTO usuarios (nombre, password_hash, salt, rol) VALUES (?, ?, ?, ?)",
+            ("admin", pwd_hash, salt, "admin"),
         )
     cur.execute(
         """
@@ -249,16 +283,18 @@ def migrate_if_needed(conn: sqlite3.Connection) -> None:
             CREATE TABLE IF NOT EXISTS usuarios (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 nombre TEXT NOT NULL UNIQUE,
-                password TEXT NOT NULL,
+                password_hash TEXT,
+                salt TEXT,
                 rol TEXT NOT NULL
             )
             """,
         )
         cur.execute("SELECT COUNT(*) FROM usuarios")
         if cur.fetchone()[0] == 0:
+            pwd_hash, salt = hash_password("admin")
             cur.execute(
-                "INSERT INTO usuarios (nombre, password, rol) VALUES (?, ?, ?)",
-                ("admin", hash_password("admin"), "admin"),
+                "INSERT INTO usuarios (nombre, password_hash, salt, rol) VALUES (?, ?, ?, ?)",
+                ("admin", pwd_hash, salt, "admin"),
             )
         cur.execute("UPDATE meta SET schema_version = 7")
         conn.commit()
@@ -776,18 +812,19 @@ def update_product_ext(product_id: int, **campos) -> bool:
 def add_usuario(nombre: str, password: str, rol: str) -> int:
     conn = _ensure_conn()
     cur = conn.cursor()
+    pwd_hash, salt = hash_password(password)
     cur.execute(
-        "INSERT INTO usuarios (nombre, password, rol) VALUES (?, ?, ?)",
-        (nombre, hash_password(password), rol),
+        "INSERT INTO usuarios (nombre, password_hash, salt, rol) VALUES (?, ?, ?, ?)",
+        (nombre, pwd_hash, salt, rol),
     )
     conn.commit()
     return cur.lastrowid
 
 
-def get_usuario(nombre: str) -> Optional[Tuple[int, str, str]]:
+def get_usuario(nombre: str) -> Optional[Tuple[int, str, str, str]]:
     cur = _ensure_conn().cursor()
     cur.execute(
-        "SELECT id, password, rol FROM usuarios WHERE nombre = ?",
+        "SELECT id, password_hash, salt, rol FROM usuarios WHERE nombre = ?",
         (nombre,),
     )
     row = cur.fetchone()
