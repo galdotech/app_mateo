@@ -21,6 +21,7 @@ from app.resources import icons_rc  # noqa: F401
 from app.ui.ui_main_window import Ui_MainWindow
 from app.data import db, export_service, summary_service
 from .notificaciones import notify_low_stock, notify_pending_repairs
+from .calendar_dialog import CalendarDialog
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +54,8 @@ class MainWindow(QMainWindow):
         self.ui.actionInventario.triggered.connect(self._open_inventario)
         self.ui.actionReparaciones.triggered.connect(self._open_reparaciones)
         self.ui.actionActualizar.triggered.connect(self.refresh_all)
+        self.actionCalendario = self.ui.menuModulos.addAction("Calendario")
+        self.actionCalendario.triggered.connect(self._open_calendar)
 
         # Export actions
         self._export_menu = self.ui.menuArchivo.addMenu("Exportar")
@@ -147,6 +150,10 @@ class MainWindow(QMainWindow):
         dlg = dlg_cls(self)
         if dlg.exec() == QDialog.Accepted:
             self.refresh_all()
+
+    def _open_calendar(self):
+        dlg = CalendarDialog(self)
+        dlg.exec()
 
     def _export_table(self, table: str) -> None:
         file_path, selected_filter = QFileDialog.getSaveFileName(
