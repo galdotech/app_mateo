@@ -54,7 +54,11 @@ class MainWindow(QMainWindow):
 
     def _load_dialog_class(self, base: str, class_name: str) -> Optional[Type[QDialog]]:
         """Try to import a dialog class handling plural/singular variations."""
-        for variant in {base, base.rstrip('s'), base + 's'}:
+        variants = [base, base.rstrip('s')]
+        if not base.endswith('s'):
+            variants.append(base + 's')
+        variants = list(dict.fromkeys(variants))
+        for variant in variants:
             module_name = f'app.views.{variant}_dialog'
             try:
                 module = importlib.import_module(module_name)
