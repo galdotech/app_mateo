@@ -14,6 +14,14 @@ def _ensure_conn() -> sqlite3.Connection:
         _create_tables(_conn)
     return _conn
 
+
+def close_db() -> None:
+    """Close the global database connection if it exists."""
+    global _conn
+    if _conn is not None:
+        _conn.close()
+        _conn = None
+
 def _create_tables(conn: sqlite3.Connection) -> None:
     cur = conn.cursor()
     # Tablas mínimas
