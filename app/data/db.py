@@ -134,6 +134,40 @@ def _create_tables(conn: sqlite3.Connection) -> None:
     if cur.fetchone()[0] == 0:
         cur.execute("INSERT INTO meta(schema_version) VALUES (1)")
 
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS tickets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            cliente TEXT NOT NULL,
+            dispositivo TEXT NOT NULL,
+            descripcion TEXT,
+            estado TEXT DEFAULT 'recibido',
+            fecha TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS ticket_fotos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ticket_id INTEGER NOT NULL,
+            ruta TEXT NOT NULL,
+            FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
+        )
+        """
+    )
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS ticket_estados (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ticket_id INTEGER NOT NULL,
+            estado TEXT NOT NULL,
+            fecha TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
+        )
+        """
+    )
+
     # Índices
     try:
         cur.execute("CREATE INDEX IF NOT EXISTS idx_clientes_nombre ON clientes(nombre)")
@@ -149,6 +183,18 @@ def _create_tables(conn: sqlite3.Connection) -> None:
         pass
     try:
         cur.execute("CREATE INDEX IF NOT EXISTS idx_reparaciones_estado ON reparaciones(estado)")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_tickets_cliente ON tickets(cliente)")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_tickets_dispositivo ON tickets(dispositivo)")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_tickets_estado ON tickets(estado)")
     except sqlite3.OperationalError:
         pass
 
@@ -297,6 +343,55 @@ def migrate_if_needed(conn: sqlite3.Connection) -> None:
                 ("admin", pwd_hash, salt, "admin"),
             )
         cur.execute("UPDATE meta SET schema_version = 7")
+        conn.commit()
+
+    if version < 8:
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS tickets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                cliente TEXT NOT NULL,
+                dispositivo TEXT NOT NULL,
+                descripcion TEXT,
+                estado TEXT DEFAULT 'recibido',
+                fecha TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS ticket_fotos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ticket_id INTEGER NOT NULL,
+                ruta TEXT NOT NULL,
+                FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS ticket_estados (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ticket_id INTEGER NOT NULL,
+                estado TEXT NOT NULL,
+                fecha TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
+            )
+            """
+        )
+        try:
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_tickets_cliente ON tickets(cliente)")
+        except sqlite3.OperationalError:
+            pass
+        try:
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_tickets_dispositivo ON tickets(dispositivo)")
+        except sqlite3.OperationalError:
+            pass
+        try:
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_tickets_estado ON tickets(estado)")
+        except sqlite3.OperationalError:
+            pass
+        cur.execute("UPDATE meta SET schema_version = 8")
         conn.commit()
 
 # API pública
@@ -864,3 +959,73 @@ def get_usuario(nombre: str) -> Optional[Tuple[int, str, str, str]]:
     )
     row = cur.fetchone()
     return row if row else None
+
+
+# --- Tickets ---
+
+TICKET_STATES = ["recibido", "en reparación", "listo", "entregado"]
+
+
+def create_ticket(cliente: str, dispositivo: str, descripcion: str, fotos: Optional[List[str]] = None) -> int:
+    """Create a new ticket and optional associated photos."""
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO tickets (cliente, dispositivo, descripcion) VALUES (?, ?, ?)",
+        (cliente, dispositivo, descripcion),
+    )
+    ticket_id = cur.lastrowid
+    if fotos:
+        cur.executemany(
+            "INSERT INTO ticket_fotos (ticket_id, ruta) VALUES (?, ?)",
+            [(ticket_id, ruta) for ruta in fotos],
+        )
+    # Estado inicial
+    cur.execute(
+        "INSERT INTO ticket_estados (ticket_id, estado) VALUES (?, ?)",
+        (ticket_id, "recibido"),
+    )
+    conn.commit()
+    return ticket_id
+
+
+def update_ticket_state(ticket_id: int, estado: str) -> None:
+    """Update the ticket's current state and record it in the timeline."""
+    if estado not in TICKET_STATES:
+        raise ValueError("Estado inválido")
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute("UPDATE tickets SET estado = ? WHERE id = ?", (estado, ticket_id))
+    cur.execute(
+        "INSERT INTO ticket_estados (ticket_id, estado) VALUES (?, ?)",
+        (ticket_id, estado),
+    )
+    conn.commit()
+
+
+def get_ticket_timeline(ticket_id: int) -> List[Tuple[str, str]]:
+    """Return the chronological list of states for a ticket."""
+    cur = _ensure_conn().cursor()
+    cur.execute(
+        "SELECT estado, fecha FROM ticket_estados WHERE ticket_id = ? ORDER BY fecha ASC",
+        (ticket_id,),
+    )
+    return cur.fetchall()
+
+
+def search_tickets(cliente: str | None = None, dispositivo: str | None = None, estado: str | None = None) -> List[Tuple[int, str, str, str]]:
+    """Search tickets by client name, device or state."""
+    cur = _ensure_conn().cursor()
+    query = "SELECT id, cliente, dispositivo, estado FROM tickets WHERE 1=1"
+    params: List[object] = []
+    if cliente:
+        query += " AND cliente LIKE ?"
+        params.append(f"%{cliente}%")
+    if dispositivo:
+        query += " AND dispositivo LIKE ?"
+        params.append(f"%{dispositivo}%")
+    if estado:
+        query += " AND estado = ?"
+        params.append(estado)
+    cur.execute(query, params)
+    return cur.fetchall()
