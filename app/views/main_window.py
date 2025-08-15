@@ -22,6 +22,8 @@ from app.ui.ui_main_window import Ui_MainWindow
 from app.data import db, export_service, summary_service
 from .notificaciones import notify_low_stock, notify_pending_repairs
 from .calendar_dialog import CalendarDialog
+from .dashboard_dialog import DashboardDialog
+from app.services import report_service
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +58,8 @@ class MainWindow(QMainWindow):
         self.ui.actionActualizar.triggered.connect(self.refresh_all)
         self.actionCalendario = self.ui.menuModulos.addAction("Calendario")
         self.actionCalendario.triggered.connect(self._open_calendar)
+        self.actionDashboard = self.ui.menuModulos.addAction("Reportes")
+        self.actionDashboard.triggered.connect(self._open_dashboard)
 
         # Export actions
         self._export_menu = self.ui.menuArchivo.addMenu("Exportar")
@@ -81,6 +85,7 @@ class MainWindow(QMainWindow):
         # Resumen inicial
         self.refresh_all()
         self._setup_notification_timer()
+        self._report_timer = report_service.schedule_periodic_report(86400, "reports")
 
     def _apply_role_permissions(self) -> None:
         if self.user_role != "admin":
@@ -153,6 +158,10 @@ class MainWindow(QMainWindow):
 
     def _open_calendar(self):
         dlg = CalendarDialog(self)
+        dlg.exec()
+
+    def _open_dashboard(self):
+        dlg = DashboardDialog(self)
         dlg.exec()
 
     def _export_table(self, table: str) -> None:
@@ -273,8 +282,15 @@ class MainWindow(QMainWindow):
                 pass
 
     def _no_impl(self, nombre):
-        QMessageBox.information(
-            self,
-            nombre,
-            f"El módulo '{nombre}' aún no está implementado en este base.\nUsa Codex/PRs para generarlo y conéctalo aquí.",
-        )
+            QMessageBox.information(
+                self,
+                nombre,
+                f"El módulo '{nombre}' aún no está implementado en este base.\nUsa Codex/PRs para generarlo y conéctalo aquí.",
+            )
+
+    def closeEvent(self, event):  # pragma: no cover - GUI event
+        try:
+            self._report_timer.cancel()
+        except Exception:
+            pass
+        super().closeEvent(event)
