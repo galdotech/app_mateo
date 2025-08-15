@@ -1,13 +1,5 @@
 # -*- coding: utf-8 -*-
-from PySide6.QtWidgets import (
-    QDialog,
-    QMessageBox,
-    QLineEdit,
-    QPushButton,
-    QHBoxLayout,
-    QLabel,
-    QMainWindow,
-)
+from PySide6.QtWidgets import QMessageBox
 from PySide6.QtGui import QStandardItemModel, QStandardItem, QIcon
 from PySide6.QtCore import Qt
 
@@ -16,9 +8,10 @@ from app.resources import icons_rc  # noqa: F401
 from app.ui.ui_inventario import Ui_InventarioDialog
 from app.data import db
 from .filter_proxy import MultiFilterProxyModel
+from .base_dialog import BaseDialog
 
 
-class InventarioDialog(QDialog):
+class InventarioDialog(BaseDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.ui = Ui_InventarioDialog()
@@ -56,24 +49,13 @@ class InventarioDialog(QDialog):
         self.ui.tableProductos.setModel(self.proxy)
         self.ui.tableProductos.setSortingEnabled(True)
 
-        self._setup_filters()
+        self._build_filters(
+            self.ui.verticalLayout,
+            [("Nombre", 1), ("SKU", 0), ("Categoría", 2), ("Proveedor", 8)],
+            1,
+        )
 
         self._load_products()
-
-    def _set_button_icon(self, btn: QPushButton, resource: str) -> None:
-        icon = QIcon(resource)
-        if not icon.isNull():
-            btn.setIcon(icon)
-
-    def _show_status(self, text: str) -> None:
-        parent = self.parent()
-        if isinstance(parent, QMainWindow):
-            parent.statusBar().showMessage(text, 3000)
-
-    def _set_error(self, widget: QLineEdit, state: bool) -> None:
-        widget.setProperty("error", state)
-        widget.style().unpolish(widget)
-        widget.style().polish(widget)
 
     def _clear_inputs(self) -> None:
         self.ui.lineEditSKU.clear()
@@ -86,38 +68,6 @@ class InventarioDialog(QDialog):
         self.ui.lineUbicacion.clear()
         self.ui.lineProveedor.clear()
 
-    def _setup_filters(self) -> None:
-        layout = QHBoxLayout()
-        self.filter_nombre = QLineEdit(self)
-        self.filter_sku = QLineEdit(self)
-        self.filter_categoria = QLineEdit(self)
-        self.filter_proveedor = QLineEdit(self)
-        self.btn_clear = QPushButton("Limpiar filtros", self)
-
-        layout.addWidget(QLabel("Nombre:"))
-        layout.addWidget(self.filter_nombre)
-        layout.addWidget(QLabel("SKU:"))
-        layout.addWidget(self.filter_sku)
-        layout.addWidget(QLabel("Categoría:"))
-        layout.addWidget(self.filter_categoria)
-        layout.addWidget(QLabel("Proveedor:"))
-        layout.addWidget(self.filter_proveedor)
-        layout.addWidget(self.btn_clear)
-
-        self.ui.verticalLayout.insertLayout(1, layout)
-
-        self.filter_nombre.textChanged.connect(lambda text: self.proxy.setFilterForColumn(1, text))
-        self.filter_sku.textChanged.connect(lambda text: self.proxy.setFilterForColumn(0, text))
-        self.filter_categoria.textChanged.connect(lambda text: self.proxy.setFilterForColumn(2, text))
-        self.filter_proveedor.textChanged.connect(lambda text: self.proxy.setFilterForColumn(8, text))
-        self.btn_clear.clicked.connect(self._clear_filters)
-
-    def _clear_filters(self) -> None:
-        self.filter_nombre.clear()
-        self.filter_sku.clear()
-        self.filter_categoria.clear()
-        self.filter_proveedor.clear()
-        self.proxy.clearFilters()
 
     def _load_products(self) -> None:
         self._updating = True

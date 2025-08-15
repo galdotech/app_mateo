@@ -1,13 +1,5 @@
 # -*- coding: utf-8 -*-
-from PySide6.QtWidgets import (
-    QDialog,
-    QMessageBox,
-    QLineEdit,
-    QPushButton,
-    QHBoxLayout,
-    QLabel,
-    QMainWindow,
-)
+from PySide6.QtWidgets import QMessageBox
 from PySide6.QtGui import QStandardItemModel, QStandardItem, QIcon
 from PySide6.QtCore import Qt
 
@@ -16,9 +8,10 @@ from app.resources import icons_rc  # noqa: F401
 from app.ui.ui_dispositivos import Ui_DispositivosDialog
 from app.data import db
 from .filter_proxy import MultiFilterProxyModel
+from .base_dialog import BaseDialog
 
 
-class DispositivosDialog(QDialog):
+class DispositivosDialog(BaseDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.ui = Ui_DispositivosDialog()
@@ -53,64 +46,20 @@ class DispositivosDialog(QDialog):
         self.ui.tableDispositivos.setModel(self.proxy)
         self.ui.tableDispositivos.setSortingEnabled(True)
 
-        self._setup_filters()
+        self._build_filters(
+            self.ui.verticalLayout,
+            [("Cliente", 0), ("Marca", 1), ("Modelo", 2), ("IMEI", 3)],
+            1,
+        )
 
         self._load_clientes()
         self._load_dispositivos()
-
-    def _set_button_icon(self, btn: QPushButton, resource: str) -> None:
-        icon = QIcon(resource)
-        if not icon.isNull():
-            btn.setIcon(icon)
-
-    def _show_status(self, text: str) -> None:
-        parent = self.parent()
-        if isinstance(parent, QMainWindow):
-            parent.statusBar().showMessage(text, 3000)
-
-    def _set_error(self, widget: QLineEdit, state: bool) -> None:
-        widget.setProperty("error", state)
-        widget.style().unpolish(widget)
-        widget.style().polish(widget)
 
     def _load_clientes(self):
         combo = self.ui.comboCliente
         combo.clear()
         for cid, nombre in db.listar_clientes():
             combo.addItem(nombre, cid)
-
-    def _setup_filters(self) -> None:
-        layout = QHBoxLayout()
-        self.filter_cliente = QLineEdit(self)
-        self.filter_marca = QLineEdit(self)
-        self.filter_modelo = QLineEdit(self)
-        self.filter_imei = QLineEdit(self)
-        self.btn_clear = QPushButton("Limpiar filtros", self)
-
-        layout.addWidget(QLabel("Cliente:"))
-        layout.addWidget(self.filter_cliente)
-        layout.addWidget(QLabel("Marca:"))
-        layout.addWidget(self.filter_marca)
-        layout.addWidget(QLabel("Modelo:"))
-        layout.addWidget(self.filter_modelo)
-        layout.addWidget(QLabel("IMEI:"))
-        layout.addWidget(self.filter_imei)
-        layout.addWidget(self.btn_clear)
-
-        self.ui.verticalLayout.insertLayout(1, layout)
-
-        self.filter_cliente.textChanged.connect(lambda text: self.proxy.setFilterForColumn(0, text))
-        self.filter_marca.textChanged.connect(lambda text: self.proxy.setFilterForColumn(1, text))
-        self.filter_modelo.textChanged.connect(lambda text: self.proxy.setFilterForColumn(2, text))
-        self.filter_imei.textChanged.connect(lambda text: self.proxy.setFilterForColumn(3, text))
-        self.btn_clear.clicked.connect(self._clear_filters)
-
-    def _clear_filters(self) -> None:
-        self.filter_cliente.clear()
-        self.filter_marca.clear()
-        self.filter_modelo.clear()
-        self.filter_imei.clear()
-        self.proxy.clearFilters()
 
     def _load_dispositivos(self):
         self._updating = True
