@@ -5,8 +5,6 @@ from pathlib import Path
 from typing import Callable, Iterable, List, Tuple
 import threading
 
-from openpyxl import Workbook
-
 try:  # pragma: no cover - optional dependency checked at runtime
     from reportlab.lib.pagesizes import letter
     from reportlab.pdfgen import canvas
@@ -41,6 +39,10 @@ def create_financial_chart(data: Iterable[FinancialRow], filepath: str) -> None:
 
 def export_report_to_excel(data: Iterable[FinancialRow], filepath: str) -> None:
     """Export financial summary to an Excel file."""
+    try:
+        from openpyxl import Workbook
+    except Exception as exc:  # pragma: no cover - defensive
+        raise RuntimeError("openpyxl is required for Excel export") from exc
     wb = Workbook()
     ws = wb.active
     ws.append(["Periodo", "Ingresos", "Costos", "Margen"])
