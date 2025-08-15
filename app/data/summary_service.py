@@ -1,6 +1,8 @@
 """Summary service for dashboard counts."""
 from __future__ import annotations
 
+from typing import cast
+
 from app.data import db
 
 
@@ -11,7 +13,7 @@ def get_counts() -> tuple[int, int, int, int]:
         tuple: (total_clientes, total_dispositivos, total_productos, total_reparaciones_pendientes)
         If an error occurs when retrieving a count, the affected value will be ``0``.
     """
-    counts = []
+    counts: list[int] = []
     funcs = (
         db.contar_clientes,
         db.contar_dispositivos,
@@ -23,4 +25,5 @@ def get_counts() -> tuple[int, int, int, int]:
             counts.append(func())
         except Exception:
             counts.append(0)
-    return tuple(counts)  # type: ignore[return-value]
+
+    return cast(tuple[int, int, int, int], tuple(counts))
