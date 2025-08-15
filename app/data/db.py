@@ -206,6 +206,50 @@ def _create_tables(conn: sqlite3.Connection) -> None:
         """
     )
 
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS presupuestos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            reparacion_id INTEGER NOT NULL,
+            repuestos TEXT,
+            mano_obra REAL DEFAULT 0,
+            tiempo_estimado INTEGER DEFAULT 0,
+            total REAL DEFAULT 0,
+            aprobado INTEGER DEFAULT 0,
+            fecha TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (reparacion_id) REFERENCES reparaciones(id) ON DELETE CASCADE
+        )
+        """
+    )
+
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS facturas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            reparacion_id INTEGER NOT NULL,
+            cliente_id INTEGER NOT NULL,
+            total REAL NOT NULL,
+            pagado REAL DEFAULT 0,
+            saldo REAL DEFAULT 0,
+            fecha TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (reparacion_id) REFERENCES reparaciones(id) ON DELETE CASCADE,
+            FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
+        )
+        """
+    )
+
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pagos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            factura_id INTEGER NOT NULL,
+            monto REAL NOT NULL,
+            fecha TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (factura_id) REFERENCES facturas(id) ON DELETE CASCADE
+        )
+        """
+    )
+
     # Índices
     try:
         cur.execute("CREATE INDEX IF NOT EXISTS idx_clientes_nombre ON clientes(nombre)")
@@ -440,6 +484,51 @@ def migrate_if_needed(conn: sqlite3.Connection) -> None:
         except sqlite3.OperationalError:
             pass
         cur.execute("UPDATE meta SET schema_version = 9")
+        conn.commit()
+
+    if version < 10:
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS presupuestos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                reparacion_id INTEGER NOT NULL,
+                repuestos TEXT,
+                mano_obra REAL DEFAULT 0,
+                tiempo_estimado INTEGER DEFAULT 0,
+                total REAL DEFAULT 0,
+                aprobado INTEGER DEFAULT 0,
+                fecha TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (reparacion_id) REFERENCES reparaciones(id) ON DELETE CASCADE
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS facturas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                reparacion_id INTEGER NOT NULL,
+                cliente_id INTEGER NOT NULL,
+                total REAL NOT NULL,
+                pagado REAL DEFAULT 0,
+                saldo REAL DEFAULT 0,
+                fecha TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (reparacion_id) REFERENCES reparaciones(id) ON DELETE CASCADE,
+                FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS pagos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                factura_id INTEGER NOT NULL,
+                monto REAL NOT NULL,
+                fecha TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (factura_id) REFERENCES facturas(id) ON DELETE CASCADE
+            )
+            """
+        )
+        cur.execute("UPDATE meta SET schema_version = 10")
         conn.commit()
 
 # API pública
@@ -1189,3 +1278,91 @@ def search_tickets(cliente: str | None = None, dispositivo: str | None = None, e
         params.append(estado)
     cur.execute(query, params)
     return cur.fetchall()
+
+
+def add_presupuesto(
+    reparacion_id: int,
+    repuestos: str,
+    mano_obra: float,
+    tiempo_estimado: int,
+    total: float,
+) -> int:
+    """Insert a new budget for a repair."""
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        INSERT INTO presupuestos (reparacion_id, repuestos, mano_obra, tiempo_estimado, total)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (reparacion_id, repuestos, mano_obra, tiempo_estimado, total),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def aprobar_presupuesto(presupuesto_id: int) -> bool:
+    """Mark a budget as approved by the client."""
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE presupuestos SET aprobado = 1 WHERE id = ?",
+        (presupuesto_id,),
+    )
+    conn.commit()
+    return cur.rowcount > 0
+
+
+def crear_factura(reparacion_id: int, cliente_id: int, total: float) -> int:
+    """Create an invoice for a repair and client."""
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        INSERT INTO facturas (reparacion_id, cliente_id, total, pagado, saldo)
+        VALUES (?, ?, ?, 0, ?)
+        """,
+        (reparacion_id, cliente_id, total, total),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def registrar_pago(factura_id: int, monto: float) -> int:
+    """Register a payment for an invoice and update its balance."""
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO pagos (factura_id, monto) VALUES (?, ?)",
+        (factura_id, monto),
+    )
+    cur.execute(
+        "UPDATE facturas SET pagado = pagado + ?, saldo = saldo - ? WHERE id = ?",
+        (monto, monto, factura_id),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def obtener_estado_factura(factura_id: int) -> Tuple[float, float, float]:
+    """Return total, paid amount and outstanding balance for an invoice."""
+    cur = _ensure_conn().cursor()
+    cur.execute(
+        "SELECT total, pagado, saldo FROM facturas WHERE id = ?",
+        (factura_id,),
+    )
+    row = cur.fetchone()
+    if row is None:
+        return (0.0, 0.0, 0.0)
+    return row  # type: ignore[return-value]
+
+
+def deuda_cliente(cliente_id: int) -> float:
+    """Return the outstanding debt for a client."""
+    cur = _ensure_conn().cursor()
+    cur.execute(
+        "SELECT SUM(saldo) FROM facturas WHERE cliente_id = ?",
+        (cliente_id,),
+    )
+    result = cur.fetchone()[0]
+    return float(result) if result is not None else 0.0
