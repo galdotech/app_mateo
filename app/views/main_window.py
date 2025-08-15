@@ -7,12 +7,19 @@ from pathlib import Path
 from typing import Optional, Type
 
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QDialog, QMainWindow, QMessageBox, QApplication, QTableWidgetItem
+from PySide6.QtWidgets import (
+    QApplication,
+    QDialog,
+    QFileDialog,
+    QMainWindow,
+    QMessageBox,
+    QTableWidgetItem,
+)
 from PySide6.QtCore import QSettings, Qt, QTimer
 
 from app.resources import icons_rc  # noqa: F401
 from app.ui.ui_main_window import Ui_MainWindow
-from app.data import db
+from app.data import db, export_service
 from .notificaciones import notify_low_stock, notify_pending_repairs
 
 logger = logging.getLogger(__name__)
@@ -46,6 +53,17 @@ class MainWindow(QMainWindow):
         self.ui.actionInventario.triggered.connect(self._open_inventario)
         self.ui.actionReparaciones.triggered.connect(self._open_reparaciones)
         self.ui.actionActualizar.triggered.connect(self.refresh_all)
+
+        # Export actions
+        self._export_menu = self.ui.menuArchivo.addMenu("Exportar")
+        export_actions = {
+            "clientes": self._export_menu.addAction("Clientes"),
+            "dispositivos": self._export_menu.addAction("Dispositivos"),
+            "inventario": self._export_menu.addAction("Inventario"),
+            "reparaciones": self._export_menu.addAction("Reparaciones"),
+        }
+        for table, action in export_actions.items():
+            action.triggered.connect(lambda _=False, t=table: self._export_table(t))
 
         # Acciones rápidas
         self.ui.btnClientes.clicked.connect(self._open_clientes)
@@ -129,6 +147,29 @@ class MainWindow(QMainWindow):
         dlg = dlg_cls(self)
         if dlg.exec() == QDialog.Accepted:
             self.refresh_all()
+
+    def _export_table(self, table: str) -> None:
+        file_path, selected_filter = QFileDialog.getSaveFileName(
+            self,
+            "Exportar datos",
+            "",
+            "CSV (*.csv);;Excel (*.xlsx)",
+        )
+        if not file_path:
+            return
+        try:
+            if selected_filter.startswith("Excel") or file_path.endswith(".xlsx"):
+                if not file_path.endswith(".xlsx"):
+                    file_path += ".xlsx"
+                export_service.export_table_to_excel(table, file_path)
+            else:
+                if not file_path.endswith(".csv"):
+                    file_path += ".csv"
+                export_service.export_table_to_csv(table, file_path)
+            QMessageBox.information(self, "Exportar", "Datos exportados correctamente")
+        except Exception as exc:  # pragma: no cover - GUI feedback
+            logger.exception("Error al exportar %s", table)
+            QMessageBox.critical(self, "Error", str(exc))
 
     def refresh_all(self):
         self.refresh_summary()
