@@ -1,13 +1,5 @@
 # -*- coding: utf-8 -*-
-from PySide6.QtWidgets import (
-    QDialog,
-    QMessageBox,
-    QLineEdit,
-    QPushButton,
-    QHBoxLayout,
-    QLabel,
-    QMainWindow,
-)
+from PySide6.QtWidgets import QMessageBox
 from PySide6.QtGui import QRegularExpressionValidator, QStandardItemModel, QStandardItem, QIcon
 from PySide6.QtCore import QRegularExpression, Qt
 
@@ -16,9 +8,10 @@ from app.resources import icons_rc  # noqa: F401
 from app.ui.ui_clientes import Ui_ClientesDialog
 from app.data import db
 from .filter_proxy import MultiFilterProxyModel
+from .base_dialog import BaseDialog
 
 
-class ClientesDialog(QDialog):
+class ClientesDialog(BaseDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.ui = Ui_ClientesDialog()
@@ -51,53 +44,15 @@ class ClientesDialog(QDialog):
             lambda *_: self.cargar_seleccion()
         )
 
-        self._setup_filters()
+        self._build_filters(
+            self.ui.verticalLayout,
+            [("Nombre", 1), ("Teléfono", 2), ("Email", 3)],
+            2,
+        )
 
         self._clientes = {}
         self._load_clientes()
 
-    def _set_button_icon(self, btn: QPushButton, resource: str) -> None:
-        icon = QIcon(resource)
-        if not icon.isNull():
-            btn.setIcon(icon)
-
-    def _show_status(self, text: str) -> None:
-        parent = self.parent()
-        if isinstance(parent, QMainWindow):
-            parent.statusBar().showMessage(text, 3000)
-
-    def _set_error(self, widget: QLineEdit, state: bool) -> None:
-        widget.setProperty("error", state)
-        widget.style().unpolish(widget)
-        widget.style().polish(widget)
-
-    def _setup_filters(self) -> None:
-        layout = QHBoxLayout()
-        self.filter_name = QLineEdit(self)
-        self.filter_phone = QLineEdit(self)
-        self.filter_email = QLineEdit(self)
-        self.btn_clear = QPushButton("Limpiar filtros", self)
-
-        layout.addWidget(QLabel("Nombre:"))
-        layout.addWidget(self.filter_name)
-        layout.addWidget(QLabel("Teléfono:"))
-        layout.addWidget(self.filter_phone)
-        layout.addWidget(QLabel("Email:"))
-        layout.addWidget(self.filter_email)
-        layout.addWidget(self.btn_clear)
-
-        self.ui.verticalLayout.insertLayout(2, layout)
-
-        self.filter_name.textChanged.connect(lambda text: self.proxy.setFilterForColumn(1, text))
-        self.filter_phone.textChanged.connect(lambda text: self.proxy.setFilterForColumn(2, text))
-        self.filter_email.textChanged.connect(lambda text: self.proxy.setFilterForColumn(3, text))
-        self.btn_clear.clicked.connect(self._clear_filters)
-
-    def _clear_filters(self) -> None:
-        self.filter_name.clear()
-        self.filter_phone.clear()
-        self.filter_email.clear()
-        self.proxy.clearFilters()
 
     def _load_clientes(self) -> None:
         self.model.setRowCount(0)
