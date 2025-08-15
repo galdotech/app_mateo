@@ -49,6 +49,11 @@ class ReparacionesDialog(BaseDialog):
         total = self.ui.doubleSpinBoxTotal.value()
         saldo = self.ui.doubleSpinBoxSaldo.value()
         tecnico = self.ui.lineEditTecnico.text().strip()
+        tiempo_widget = getattr(self.ui, "spinBoxTiempoEstimado", None)
+        if tiempo_widget is not None:
+            tiempo_estimado = tiempo_widget.value()
+        else:
+            tiempo_estimado = 0
         garantia = self.ui.spinBoxGarantia.value()
         pass_bloqueo = self.ui.lineEditPassBloqueo.text().strip()
         respaldo = self.ui.checkBoxRespaldo.isChecked()
@@ -89,11 +94,16 @@ class ReparacionesDialog(BaseDialog):
             estado,
             prioridad,
             tecnico,
+            tiempo_estimado,
             garantia,
             pass_bloqueo,
             respaldo,
             accesorios,
         )
+        if tecnico:
+            from .notificaciones import notify_new_assignment
+
+            notify_new_assignment(self, tecnico, descripcion)
         QMessageBox.information(self, "Reparación", "Reparación guardada correctamente.")
         self._show_status("Reparación guardada")
         self.accept()

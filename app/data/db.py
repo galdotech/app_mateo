@@ -94,8 +94,22 @@ def _create_tables(conn: sqlite3.Connection) -> None:
             dispositivo_id INTEGER NOT NULL,
             fecha TEXT DEFAULT CURRENT_TIMESTAMP,
             descripcion TEXT,
+            diagnostico TEXT,
+            acciones TEXT,
+            piezas_usadas TEXT,
             costo REAL DEFAULT 0,
+            costo_mano_obra REAL DEFAULT 0,
+            deposito_pagado REAL DEFAULT 0,
+            total REAL DEFAULT 0,
+            saldo REAL DEFAULT 0,
             estado TEXT DEFAULT 'Pendiente',
+            prioridad TEXT DEFAULT 'Normal',
+            tecnico TEXT,
+            garantia_dias INTEGER DEFAULT 0,
+            pass_bloqueo TEXT,
+            respaldo_datos INTEGER DEFAULT 0,
+            accesorios_entregados TEXT,
+            tiempo_estimado INTEGER DEFAULT 0,
             FOREIGN KEY (dispositivo_id) REFERENCES dispositivos(id) ON DELETE CASCADE
         )
         """
@@ -418,6 +432,16 @@ def migrate_if_needed(conn: sqlite3.Connection) -> None:
         cur.execute("UPDATE meta SET schema_version = 8")
         conn.commit()
 
+    if version < 9:
+        try:
+            cur.execute(
+                "ALTER TABLE reparaciones ADD COLUMN tiempo_estimado INTEGER DEFAULT 0"
+            )
+        except sqlite3.OperationalError:
+            pass
+        cur.execute("UPDATE meta SET schema_version = 9")
+        conn.commit()
+
 # API pública
 def init_db(path: str = DB_PATH) -> None:
     global DB_PATH
@@ -712,6 +736,7 @@ def add_repair(
     estado: str,
     prioridad: str,
     tecnico: str,
+    tiempo_estimado: int,
     garantia_dias: int,
     pass_bloqueo: str,
     respaldo_datos: bool,
@@ -727,9 +752,9 @@ def add_repair(
         INSERT INTO reparaciones (
             dispositivo_id, descripcion, costo, estado, diagnostico, acciones,
             piezas_usadas, costo_mano_obra, deposito_pagado, total, saldo,
-            prioridad, tecnico, garantia_dias, pass_bloqueo, respaldo_datos,
-            accesorios_entregados
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            prioridad, tecnico, tiempo_estimado, garantia_dias, pass_bloqueo,
+            respaldo_datos, accesorios_entregados
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             did,
@@ -745,6 +770,7 @@ def add_repair(
             saldo,
             prioridad,
             tecnico,
+            tiempo_estimado,
             garantia_dias,
             pass_bloqueo,
             int(respaldo_datos),
@@ -770,6 +796,7 @@ def update_repair(repair_id: int, **campos) -> bool:
         "estado",
         "prioridad",
         "tecnico",
+        "tiempo_estimado",
         "garantia_dias",
         "pass_bloqueo",
         "respaldo_datos",
@@ -798,6 +825,49 @@ def update_repair(repair_id: int, **campos) -> bool:
     )
     conn.commit()
     return cur.rowcount > 0
+
+
+def assign_repair(
+    repair_id: int,
+    tecnico: str,
+    prioridad: str = "Normal",
+    tiempo_estimado: int = 0,
+) -> bool:
+    """Assign a repair to a technician with priority and estimated time."""
+    return update_repair(
+        repair_id,
+        tecnico=tecnico,
+        prioridad=prioridad,
+        tiempo_estimado=tiempo_estimado,
+    )
+
+
+def get_tasks_by_date(fecha: str) -> List[Tuple[int, str, str]]:
+    """Return repairs scheduled for a specific date."""
+    cur = _ensure_conn().cursor()
+    cur.execute(
+        "SELECT id, descripcion, tecnico FROM reparaciones WHERE date(fecha) = date(?)",
+        (fecha,),
+    )
+    return cur.fetchall()
+
+
+def get_workload_metrics() -> List[Tuple[str, int, int]]:
+    """Return workload metrics per technician.
+
+    Each tuple contains (technician, pending_repairs, total_estimated_time).
+    """
+    cur = _ensure_conn().cursor()
+    cur.execute(
+        """
+        SELECT tecnico, COUNT(*), COALESCE(SUM(tiempo_estimado), 0)
+        FROM reparaciones
+        WHERE estado = 'Pendiente' AND tecnico IS NOT NULL AND tecnico != ''
+        GROUP BY tecnico
+        ORDER BY tecnico
+        """
+    )
+    return cur.fetchall()
 
 
 # --- Inventario ---

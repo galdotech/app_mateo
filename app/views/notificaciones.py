@@ -25,3 +25,12 @@ def notify_pending_repairs(parent: QWidget, count: int) -> None:
         "Reparaciones pendientes",
         f"Hay {count} reparaciones pendientes.",
     )
+
+
+def notify_new_assignment(parent: QWidget, technician: str, description: str) -> None:
+    """Inform about a new repair assigned to a technician."""
+    QMessageBox.information(
+        parent,
+        "Nuevo trabajo asignado",
+        f"Se ha asignado '{description}' a {technician}.",
+    )

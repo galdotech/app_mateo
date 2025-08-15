@@ -1,7 +1,7 @@
 """Summary service for dashboard counts."""
 from __future__ import annotations
 
-from typing import cast
+from typing import cast, List, Tuple
 
 from app.data import db
 
@@ -27,3 +27,11 @@ def get_counts() -> tuple[int, int, int, int]:
             counts.append(0)
 
     return cast(tuple[int, int, int, int], tuple(counts))
+
+
+def get_workload_metrics() -> List[Tuple[str, int, int]]:
+    """Return workload metrics per technician."""
+    try:
+        return db.get_workload_metrics()
+    except Exception:
+        return []
