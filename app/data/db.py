@@ -645,6 +645,38 @@ def migrate_if_needed(conn: sqlite3.Connection) -> None:
         cur.execute("UPDATE meta SET schema_version = 13")
         conn.commit()
 
+    if version < 14:
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS garantias (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                reparacion_id INTEGER NOT NULL,
+                descripcion TEXT NOT NULL,
+                estado TEXT DEFAULT 'abierta',
+                fecha TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (reparacion_id) REFERENCES reparaciones(id) ON DELETE CASCADE
+            )
+            """
+        )
+        cur.execute("UPDATE meta SET schema_version = 14")
+        conn.commit()
+
+    if version < 15:
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS devoluciones (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                factura_id INTEGER NOT NULL,
+                motivo TEXT NOT NULL,
+                estado TEXT DEFAULT 'pendiente',
+                fecha TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (factura_id) REFERENCES facturas(id) ON DELETE CASCADE
+            )
+            """
+        )
+        cur.execute("UPDATE meta SET schema_version = 15")
+        conn.commit()
+
 # API pública
 def init_db(path: str = DB_PATH) -> None:
     global DB_PATH
@@ -1839,4 +1871,52 @@ def get_notifications(destinatario: str | None = None) -> List[Tuple[int, str, s
         query += " WHERE destinatario = ?"
         params.append(destinatario)
     cur.execute(query, params)
+    return cur.fetchall()
+
+
+def registrar_garantia(reparacion_id: int, descripcion: str, estado: str = "abierta") -> int:
+    """Register a warranty claim for a repair."""
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        INSERT INTO garantias (reparacion_id, descripcion, estado)
+        VALUES (?, ?, ?)
+        """,
+        (reparacion_id, descripcion, estado),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def listar_garantias() -> List[Tuple[int, int, str, str, str]]:
+    """Return registered warranty claims."""
+    cur = _ensure_conn().cursor()
+    cur.execute(
+        "SELECT id, reparacion_id, descripcion, estado, fecha FROM garantias ORDER BY id"
+    )
+    return cur.fetchall()
+
+
+def registrar_devolucion(factura_id: int, motivo: str, estado: str = "pendiente") -> int:
+    """Register a return associated with an invoice."""
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        INSERT INTO devoluciones (factura_id, motivo, estado)
+        VALUES (?, ?, ?)
+        """,
+        (factura_id, motivo, estado),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def listar_devoluciones() -> List[Tuple[int, int, str, str, str]]:
+    """Return registered returns."""
+    cur = _ensure_conn().cursor()
+    cur.execute(
+        "SELECT id, factura_id, motivo, estado, fecha FROM devoluciones ORDER BY id"
+    )
     return cur.fetchall()
