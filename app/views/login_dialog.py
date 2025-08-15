@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QMessageBox,
 )
+from PySide6.QtGui import QKeySequence, QShortcut
 
 from app.data import db
 
@@ -31,6 +32,7 @@ class LoginDialog(QDialog):
 
         btns = QHBoxLayout()
         btn_login = QPushButton("Entrar", self)
+        btn_login.setDefault(True)
         btn_cancel = QPushButton("Cancelar", self)
         btns.addWidget(btn_login)
         btns.addWidget(btn_cancel)
@@ -38,6 +40,14 @@ class LoginDialog(QDialog):
 
         btn_login.clicked.connect(self._do_login)
         btn_cancel.clicked.connect(self.reject)
+
+        # Conectar Enter en los campos de texto al login
+        self.edit_user.returnPressed.connect(self._do_login)
+        self.edit_pass.returnPressed.connect(self._do_login)
+
+        # Cancelar con tecla Escape
+        shortcut_cancel = QShortcut(QKeySequence("Escape"), self)
+        shortcut_cancel.activated.connect(btn_cancel.click)
 
         self.user_role: str | None = None
 
