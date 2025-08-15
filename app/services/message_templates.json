@@ -1,0 +1,3 @@
+{
+  "ticket_update": "Hola $name, tu ticket #$ticket_id ahora está en estado '$status'."
+}

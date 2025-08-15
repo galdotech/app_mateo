@@ -531,6 +531,21 @@ def migrate_if_needed(conn: sqlite3.Connection) -> None:
         cur.execute("UPDATE meta SET schema_version = 10")
         conn.commit()
 
+    if version < 11:
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS notificaciones (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                destinatario TEXT NOT NULL,
+                canal TEXT NOT NULL,
+                mensaje TEXT NOT NULL,
+                fecha TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        cur.execute("UPDATE meta SET schema_version = 11")
+        conn.commit()
+
 # API pública
 def init_db(path: str = DB_PATH) -> None:
     global DB_PATH
@@ -1366,3 +1381,26 @@ def deuda_cliente(cliente_id: int) -> float:
     )
     result = cur.fetchone()[0]
     return float(result) if result is not None else 0.0
+
+
+def log_notification(destinatario: str, canal: str, mensaje: str) -> None:
+    """Store a notification event with timestamp."""
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO notificaciones (destinatario, canal, mensaje) VALUES (?, ?, ?)",
+        (destinatario, canal, mensaje),
+    )
+    conn.commit()
+
+
+def get_notifications(destinatario: str | None = None) -> List[Tuple[int, str, str, str]]:
+    """Return logged notifications optionally filtered by recipient."""
+    cur = _ensure_conn().cursor()
+    query = "SELECT id, destinatario, canal, fecha FROM notificaciones"
+    params: List[object] = []
+    if destinatario:
+        query += " WHERE destinatario = ?"
+        params.append(destinatario)
+    cur.execute(query, params)
+    return cur.fetchall()
