@@ -3,9 +3,10 @@ import sys
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QSettings
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QDialog
 
 from app.views.main_window import MainWindow
+from app.views.login_dialog import LoginDialog
 from app.data import db
 
 
@@ -31,7 +32,11 @@ def main():
     # Inicializa BD (lazy-safe: crea si no existe)
     db.init_db()
 
-    win = MainWindow(settings)
+    login = LoginDialog()
+    if login.exec() != QDialog.Accepted:
+        sys.exit(0)
+
+    win = MainWindow(settings, login.user_role or "")
     win.show()
     sys.exit(app.exec())
 

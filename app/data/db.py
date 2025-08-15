@@ -1,10 +1,16 @@
 # -*- coding: utf-8 -*-
 import sqlite3
 import os
+import hashlib
 from typing import Optional, List, Tuple
 
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "inventario_app.db")
 _conn: Optional[sqlite3.Connection] = None
+
+
+def hash_password(password: str) -> str:
+    """Return a sha256 hash for the given password."""
+    return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
 def _ensure_conn() -> sqlite3.Connection:
     global _conn
@@ -66,6 +72,22 @@ def _create_tables(conn: sqlite3.Connection) -> None:
         )
         """
     )
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS usuarios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL UNIQUE,
+            password TEXT NOT NULL,
+            rol TEXT NOT NULL
+        )
+        """
+    )
+    cur.execute("SELECT COUNT(*) FROM usuarios")
+    if cur.fetchone()[0] == 0:
+        cur.execute(
+            "INSERT INTO usuarios (nombre, password, rol) VALUES (?, ?, ?)",
+            ("admin", hash_password("admin"), "admin"),
+        )
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS meta (
@@ -203,6 +225,26 @@ def migrate_if_needed(conn: sqlite3.Connection) -> None:
         except sqlite3.OperationalError:
             pass
         cur.execute("UPDATE meta SET schema_version = 6")
+        conn.commit()
+
+    if version < 7:
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT NOT NULL UNIQUE,
+                password TEXT NOT NULL,
+                rol TEXT NOT NULL
+            )
+            """,
+        )
+        cur.execute("SELECT COUNT(*) FROM usuarios")
+        if cur.fetchone()[0] == 0:
+            cur.execute(
+                "INSERT INTO usuarios (nombre, password, rol) VALUES (?, ?, ?)",
+                ("admin", hash_password("admin"), "admin"),
+            )
+        cur.execute("UPDATE meta SET schema_version = 7")
         conn.commit()
 
 # API pública
@@ -706,3 +748,26 @@ def update_product_ext(product_id: int, **campos) -> bool:
     cur.execute(f"UPDATE inventario SET {', '.join(fields)} WHERE id = ?", params)
     conn.commit()
     return cur.rowcount > 0
+
+
+# --- Usuarios ---
+
+def add_usuario(nombre: str, password: str, rol: str) -> int:
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO usuarios (nombre, password, rol) VALUES (?, ?, ?)",
+        (nombre, hash_password(password), rol),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def get_usuario(nombre: str) -> Optional[Tuple[int, str, str]]:
+    cur = _ensure_conn().cursor()
+    cur.execute(
+        "SELECT id, password, rol FROM usuarios WHERE nombre = ?",
+        (nombre,),
+    )
+    row = cur.fetchone()
+    return row if row else None
