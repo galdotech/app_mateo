@@ -83,10 +83,6 @@ def _create_tables(conn: sqlite3.Connection) -> None:
     except sqlite3.OperationalError:
         pass
     try:
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_inventario_sku ON inventario(sku)")
-    except sqlite3.OperationalError:
-        pass
-    try:
         cur.execute("CREATE INDEX IF NOT EXISTS idx_reparaciones_estado ON reparaciones(estado)")
     except sqlite3.OperationalError:
         pass
@@ -160,6 +156,12 @@ def migrate_if_needed(conn: sqlite3.Connection) -> None:
                 cur.execute(f"ALTER TABLE inventario ADD COLUMN {column}")
             except sqlite3.OperationalError:
                 pass
+        try:
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_inventario_sku ON inventario(sku)"
+            )
+        except sqlite3.OperationalError:
+            pass
         cur.execute("UPDATE meta SET schema_version = 4")
         conn.commit()
         version = 4
