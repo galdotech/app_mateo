@@ -6,7 +6,7 @@ from typing import cast, List, Tuple
 from app.data import db
 
 
-def get_counts() -> tuple[int, int, int, int]:
+def get_counts(sucursal_id: int | None = None) -> tuple[int, int, int, int]:
     """Return counts of clients, devices, products and pending repairs.
 
     Returns:
@@ -22,32 +22,36 @@ def get_counts() -> tuple[int, int, int, int]:
     )
     for func in funcs:
         try:
-            counts.append(func())
+            import inspect
+            if "sucursal_id" in inspect.signature(func).parameters:
+                counts.append(func(sucursal_id))
+            else:
+                counts.append(func())
         except Exception:
             counts.append(0)
 
     return cast(tuple[int, int, int, int], tuple(counts))
 
 
-def get_workload_metrics() -> List[Tuple[str, int, int]]:
+def get_workload_metrics(sucursal_id: int | None = None) -> List[Tuple[str, int, int]]:
     """Return workload metrics per technician."""
     try:
-        return db.get_workload_metrics()
+        return db.get_workload_metrics(sucursal_id)
     except Exception:
         return []
 
 
-def get_productivity_metrics() -> List[Tuple[str, int, int, float]]:
+def get_productivity_metrics(sucursal_id: int | None = None) -> List[Tuple[str, int, int, float]]:
     """Return productivity metrics per technician."""
     try:
-        return db.get_productivity_metrics()
+        return db.get_productivity_metrics(sucursal_id)
     except Exception:
         return []
 
 
-def get_financial_summary() -> List[Tuple[str, float, float, float]]:
+def get_financial_summary(sucursal_id: int | None = None) -> List[Tuple[str, float, float, float]]:
     """Return monthly financial summary."""
     try:
-        return db.get_financial_summary()
+        return db.get_financial_summary(sucursal_id)
     except Exception:
         return []

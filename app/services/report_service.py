@@ -63,9 +63,9 @@ def export_report_to_pdf(data: Iterable[FinancialRow], filepath: str) -> None:
     c.save()
 
 
-def generate_full_report(output_dir: str) -> List[FinancialRow]:
+def generate_full_report(output_dir: str, sucursal_id: int | None = None) -> List[FinancialRow]:
     """Generate financial summary and export to PDF and Excel."""
-    data = summary_service.get_financial_summary()
+    data = summary_service.get_financial_summary(sucursal_id)
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
     export_report_to_excel(data, str(out / "reporte.xlsx"))
@@ -82,7 +82,8 @@ def schedule_periodic_report(
     interval_seconds: int,
     output_dir: str,
     *,
-    task: Callable[[str], List[FinancialRow]] = generate_full_report,
+    sucursal_id: int | None = None,
+    task: Callable[[str, int | None], List[FinancialRow]] = generate_full_report,
 ) -> "_RepeatingTimer":
     """Schedule periodic generation of financial reports."""
 
@@ -94,7 +95,7 @@ def schedule_periodic_report(
         def _run(self) -> None:
             if self._stopped:
                 return
-            task(output_dir)
+            task(output_dir, sucursal_id)
             self._timer = threading.Timer(interval_seconds, self._run)
             self._timer.daemon = True
             self._timer.start()
