@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib
+import logging
 from pathlib import Path
 from typing import Optional, Type
 
@@ -12,6 +13,8 @@ from PySide6.QtCore import QSettings, Qt
 from app.resources import icons_rc  # noqa: F401
 from app.ui.ui_main_window import Ui_MainWindow
 from app.data import db
+
+logger = logging.getLogger(__name__)
 
 
 class MainWindow(QMainWindow):
@@ -63,8 +66,11 @@ class MainWindow(QMainWindow):
             try:
                 module = importlib.import_module(module_name)
                 return getattr(module, class_name)
-            except Exception:
+            except ImportError:
                 continue
+            except Exception:
+                logger.exception("Error loading %s from %s", class_name, module_name)
+                raise
         return None
 
     def _open_clientes(self):
