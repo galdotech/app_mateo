@@ -58,6 +58,7 @@ class ReparacionesDialog(QDialog):
         estado = self.ui.comboEstado.currentText()
         prioridad = self.ui.comboPrioridad.currentText()
         mano_obra = self.ui.doubleSpinBoxManoObra.value()
+        costo_piezas = self.ui.doubleSpinBoxCostoPiezas.value()
         deposito = self.ui.doubleSpinBoxDeposito.value()
         total = self.ui.doubleSpinBoxTotal.value()
         saldo = self.ui.doubleSpinBoxSaldo.value()
@@ -66,6 +67,12 @@ class ReparacionesDialog(QDialog):
         pass_bloqueo = self.ui.lineEditPassBloqueo.text().strip()
         respaldo = self.ui.checkBoxRespaldo.isChecked()
         accesorios = self.ui.lineEditAccesorios.text().strip()
+
+        descripcion_widget = getattr(self.ui, "plainTextDescripcion", None)
+        if descripcion_widget is not None:
+            descripcion = descripcion_widget.toPlainText().strip()
+        else:
+            descripcion = diagnostico
 
         if not cliente or not marca or not modelo:
             self._set_error(self.ui.lineEditCliente, not cliente)
@@ -84,10 +91,12 @@ class ReparacionesDialog(QDialog):
             cliente,
             marca,
             modelo,
+            descripcion,
             diagnostico,
             acciones,
             piezas,
             mano_obra,
+            costo_piezas,
             deposito,
             total,
             saldo,
