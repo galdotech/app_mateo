@@ -233,10 +233,10 @@ def get_counts() -> Tuple[int, int, int, int]:
     )
 
 
-def get_low_stock_products(limit: int = 8) -> List[Tuple[str, int]]:
+def get_low_stock_products(limit: int = 8) -> List[Tuple[str, int, int]]:
     cur = _ensure_conn().cursor()
     cur.execute(
-        "SELECT nombre, cantidad FROM inventario WHERE cantidad <= 1 ORDER BY cantidad ASC, nombre ASC LIMIT ?",
+        "SELECT nombre, cantidad, stock_min FROM inventario WHERE cantidad <= stock_min ORDER BY cantidad ASC, nombre ASC LIMIT ?",
         (limit,),
     )
     return cur.fetchall()

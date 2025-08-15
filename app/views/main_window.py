@@ -116,13 +116,16 @@ class MainWindow(QMainWindow):
         data = db.get_low_stock_products()
         table = self.ui.tableLowStock
         table.setRowCount(len(data))
-        table.setColumnCount(2)
-        table.setHorizontalHeaderLabels(["Producto", "Cantidad"])
-        for row, (nombre, cantidad) in enumerate(data):
+        table.setColumnCount(3)
+        table.setHorizontalHeaderLabels(["Producto", "Cantidad", "Stock mínimo"])
+        for row, (nombre, cantidad, stock_min) in enumerate(data):
             table.setItem(row, 0, QTableWidgetItem(nombre))
             item_qty = QTableWidgetItem(str(cantidad))
             item_qty.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
             table.setItem(row, 1, item_qty)
+            item_min = QTableWidgetItem(str(stock_min))
+            item_min.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            table.setItem(row, 2, item_min)
         table.setSelectionBehavior(table.SelectionBehavior.SelectRows)
         table.setAlternatingRowColors(True)
         table.setSortingEnabled(True)
