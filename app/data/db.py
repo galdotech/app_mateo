@@ -266,6 +266,8 @@ def migrate_if_needed(conn: sqlite3.Connection) -> None:
 # API pública
 def init_db(path: str = DB_PATH) -> None:
     global DB_PATH
+    if _conn is not None:
+        close_db()
     DB_PATH = path
     conn = _ensure_conn()
     _ensure_stock_min_column(conn)
