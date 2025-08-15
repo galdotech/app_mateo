@@ -13,7 +13,8 @@ def load_stylesheet(path: Path) -> str:
     try:
         with open(path, "r", encoding="utf-8") as fh:
             return fh.read()
-    except Exception:
+    except Exception as err:
+        print(err)
         return ""
 
 
