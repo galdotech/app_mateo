@@ -64,7 +64,7 @@ def import_table_from_csv(table: str, filepath: str) -> None:
     with open(filepath, newline="", encoding="utf-8") as fh:
         reader = csv.reader(fh)
         headers = next(reader)
-        rows = [row for row in reader]
+        rows = [[None if val == "" else val for val in row] for row in reader]
     conn = db._ensure_conn()
     cur = conn.cursor()
     cur.execute(f"DELETE FROM {table}")

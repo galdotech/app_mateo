@@ -56,6 +56,14 @@ def _create_tables(conn: sqlite3.Connection) -> None:
     # Tablas mínimas
     cur.execute(
         """
+        CREATE TABLE IF NOT EXISTS sucursales (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL UNIQUE
+        )
+        """
+    )
+    cur.execute(
+        """
         CREATE TABLE IF NOT EXISTS clientes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre TEXT NOT NULL
@@ -79,7 +87,9 @@ def _create_tables(conn: sqlite3.Connection) -> None:
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre TEXT NOT NULL,
             cantidad INTEGER DEFAULT 0,
-            stock_min INTEGER DEFAULT 0
+            stock_min INTEGER DEFAULT 0,
+            sucursal_id INTEGER,
+            FOREIGN KEY (sucursal_id) REFERENCES sucursales(id) ON DELETE SET NULL
         )
         """
     )
@@ -91,7 +101,9 @@ def _create_tables(conn: sqlite3.Connection) -> None:
             stock INTEGER DEFAULT 0,
             stock_min INTEGER DEFAULT 0,
             proveedor TEXT,
-            precio REAL DEFAULT 0
+            precio REAL DEFAULT 0,
+            sucursal_id INTEGER,
+            FOREIGN KEY (sucursal_id) REFERENCES sucursales(id) ON DELETE SET NULL
         )
         """
     )
@@ -118,7 +130,9 @@ def _create_tables(conn: sqlite3.Connection) -> None:
             respaldo_datos INTEGER DEFAULT 0,
             accesorios_entregados TEXT,
             tiempo_estimado INTEGER DEFAULT 0,
-            FOREIGN KEY (dispositivo_id) REFERENCES dispositivos(id) ON DELETE CASCADE
+            sucursal_id INTEGER,
+            FOREIGN KEY (dispositivo_id) REFERENCES dispositivos(id) ON DELETE CASCADE,
+            FOREIGN KEY (sucursal_id) REFERENCES sucursales(id) ON DELETE SET NULL
         )
         """
     )
@@ -141,7 +155,9 @@ def _create_tables(conn: sqlite3.Connection) -> None:
             nombre TEXT NOT NULL UNIQUE,
             password_hash TEXT,
             salt TEXT,
-            rol TEXT NOT NULL
+            rol TEXT NOT NULL,
+            sucursal_id INTEGER,
+            FOREIGN KEY (sucursal_id) REFERENCES sucursales(id) ON DELETE SET NULL
         )
         """
     )
@@ -240,8 +256,10 @@ def _create_tables(conn: sqlite3.Connection) -> None:
             pagado REAL DEFAULT 0,
             saldo REAL DEFAULT 0,
             fecha TEXT DEFAULT CURRENT_TIMESTAMP,
+            sucursal_id INTEGER,
             FOREIGN KEY (reparacion_id) REFERENCES reparaciones(id) ON DELETE CASCADE,
-            FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
+            FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE,
+            FOREIGN KEY (sucursal_id) REFERENCES sucursales(id) ON DELETE SET NULL
         )
         """
     )
@@ -254,6 +272,18 @@ def _create_tables(conn: sqlite3.Connection) -> None:
             monto REAL NOT NULL,
             fecha TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (factura_id) REFERENCES facturas(id) ON DELETE CASCADE
+        )
+        """
+    )
+
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS config (
+            clave TEXT NOT NULL,
+            valor TEXT NOT NULL,
+            sucursal_id INTEGER,
+            PRIMARY KEY (clave, sucursal_id),
+            FOREIGN KEY (sucursal_id) REFERENCES sucursales(id) ON DELETE CASCADE
         )
         """
     )
@@ -581,6 +611,40 @@ def migrate_if_needed(conn: sqlite3.Connection) -> None:
         cur.execute("UPDATE meta SET schema_version = 12")
         conn.commit()
 
+    if version < 13:
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sucursales (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT NOT NULL UNIQUE
+            )
+            """
+        )
+        for table in [
+            "usuarios",
+            "inventario",
+            "repuestos",
+            "reparaciones",
+            "facturas",
+        ]:
+            try:
+                cur.execute(f"ALTER TABLE {table} ADD COLUMN sucursal_id INTEGER")
+            except sqlite3.OperationalError:
+                pass
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS config (
+                clave TEXT NOT NULL,
+                valor TEXT NOT NULL,
+                sucursal_id INTEGER,
+                PRIMARY KEY (clave, sucursal_id),
+                FOREIGN KEY (sucursal_id) REFERENCES sucursales(id) ON DELETE CASCADE
+            )
+            """
+        )
+        cur.execute("UPDATE meta SET schema_version = 13")
+        conn.commit()
+
 # API pública
 def init_db(path: str = DB_PATH) -> None:
     global DB_PATH
@@ -591,34 +655,75 @@ def init_db(path: str = DB_PATH) -> None:
     _ensure_stock_min_column(conn)
     migrate_if_needed(conn)
 
-def contar_clientes() -> int:
+def contar_clientes(sucursal_id: int | None = None) -> int:
     cur = _ensure_conn().cursor()
-    cur.execute("SELECT COUNT(*) FROM clientes")
+    if sucursal_id is None:
+        cur.execute("SELECT COUNT(*) FROM clientes")
+    else:
+        cur.execute(
+            """
+            SELECT COUNT(DISTINCT c.id)
+            FROM clientes c
+            JOIN dispositivos d ON d.cliente_id = c.id
+            JOIN reparaciones r ON r.dispositivo_id = d.id AND r.sucursal_id = ?
+            """,
+            (sucursal_id,),
+        )
     return cur.fetchone()[0]
 
-def contar_dispositivos() -> int:
+def contar_dispositivos(sucursal_id: int | None = None) -> int:
     cur = _ensure_conn().cursor()
-    cur.execute("SELECT COUNT(*) FROM dispositivos")
+    if sucursal_id is None:
+        cur.execute("SELECT COUNT(*) FROM dispositivos")
+    else:
+        cur.execute(
+            """
+            SELECT COUNT(DISTINCT d.id)
+            FROM dispositivos d
+            JOIN reparaciones r ON r.dispositivo_id = d.id AND r.sucursal_id = ?
+            """,
+            (sucursal_id,),
+        )
     return cur.fetchone()[0]
 
-def contar_productos() -> int:
+def contar_productos(sucursal_id: int | None = None) -> int:
     cur = _ensure_conn().cursor()
-    cur.execute("SELECT COUNT(*) FROM inventario")
+    if sucursal_id is None:
+        cur.execute("SELECT COUNT(*) FROM inventario")
+    else:
+        cur.execute(
+            "SELECT COUNT(*) FROM inventario WHERE sucursal_id = ?",
+            (sucursal_id,),
+        )
     return cur.fetchone()[0]
 
-def contar_reparaciones_pendientes() -> int:
+def contar_reparaciones_pendientes(sucursal_id: int | None = None) -> int:
     cur = _ensure_conn().cursor()
-    cur.execute("SELECT COUNT(*) FROM reparaciones WHERE estado = 'Pendiente'")
+    if sucursal_id is None:
+        cur.execute("SELECT COUNT(*) FROM reparaciones WHERE estado = 'Pendiente'")
+    else:
+        cur.execute(
+            "SELECT COUNT(*) FROM reparaciones WHERE estado = 'Pendiente' AND sucursal_id = ?",
+            (sucursal_id,),
+        )
     return cur.fetchone()[0]
 
-def get_low_stock_products(limit: int = 8) -> List[Tuple[str, int, int]]:
+def get_low_stock_products(limit: int = 8, sucursal_id: int | None = None) -> List[Tuple[str, int, int]]:
     cur = _ensure_conn().cursor()
-    cur.execute(
-        "SELECT nombre, cantidad, stock_min FROM inventario "
-        "WHERE cantidad <= stock_min "
-        "ORDER BY cantidad ASC, nombre ASC LIMIT ?",
-        (limit,),
-    )
+    if sucursal_id is None:
+        cur.execute(
+            "SELECT nombre, cantidad, stock_min FROM inventario "
+            "WHERE cantidad <= stock_min "
+            "ORDER BY cantidad ASC, nombre ASC LIMIT ?",
+            (limit,),
+        )
+    else:
+        cur.execute(
+            "SELECT nombre, cantidad, stock_min FROM inventario "
+            "WHERE cantidad <= stock_min AND sucursal_id = ? "
+            "ORDER BY cantidad ASC, nombre ASC LIMIT ?",
+            (sucursal_id, limit),
+        )
     return cur.fetchall()
 
 
@@ -991,47 +1096,74 @@ def get_tasks_by_date(fecha: str) -> List[Tuple[int, str, str]]:
     return cur.fetchall()
 
 
-def get_workload_metrics() -> List[Tuple[str, int, int]]:
+def get_workload_metrics(sucursal_id: int | None = None) -> List[Tuple[str, int, int]]:
     """Return workload metrics per technician.
 
     Each tuple contains (technician, pending_repairs, total_estimated_time).
     """
     cur = _ensure_conn().cursor()
-    cur.execute(
-        """
-        SELECT tecnico, COUNT(*), COALESCE(SUM(tiempo_estimado), 0)
-        FROM reparaciones
-        WHERE estado = 'Pendiente' AND tecnico IS NOT NULL AND tecnico != ''
-        GROUP BY tecnico
-        ORDER BY tecnico
-        """
-    )
+    if sucursal_id is None:
+        cur.execute(
+            """
+            SELECT tecnico, COUNT(*), COALESCE(SUM(tiempo_estimado), 0)
+            FROM reparaciones
+            WHERE estado = 'Pendiente' AND tecnico IS NOT NULL AND tecnico != ''
+            GROUP BY tecnico
+            ORDER BY tecnico
+            """
+        )
+    else:
+        cur.execute(
+            """
+            SELECT tecnico, COUNT(*), COALESCE(SUM(tiempo_estimado), 0)
+            FROM reparaciones
+            WHERE estado = 'Pendiente' AND tecnico IS NOT NULL AND tecnico != '' AND sucursal_id = ?
+            GROUP BY tecnico
+            ORDER BY tecnico
+            """,
+            (sucursal_id,),
+        )
     return cur.fetchall()
 
 
-def get_productivity_metrics() -> List[Tuple[str, int, int, float]]:
+def get_productivity_metrics(sucursal_id: int | None = None) -> List[Tuple[str, int, int, float]]:
     """Return productivity metrics per technician.
 
     Each tuple contains:
         (technician, completed_repairs, pending_repairs, avg_estimated_time)
     """
     cur = _ensure_conn().cursor()
-    cur.execute(
-        """
-        SELECT tecnico,
-               SUM(CASE WHEN estado = 'Completada' THEN 1 ELSE 0 END) AS completadas,
-               SUM(CASE WHEN estado = 'Pendiente' THEN 1 ELSE 0 END) AS pendientes,
-               COALESCE(AVG(tiempo_estimado), 0)
-        FROM reparaciones
-        WHERE tecnico IS NOT NULL AND tecnico != ''
-        GROUP BY tecnico
-        ORDER BY tecnico
-        """
-    )
+    if sucursal_id is None:
+        cur.execute(
+            """
+            SELECT tecnico,
+                   SUM(CASE WHEN estado = 'Completada' THEN 1 ELSE 0 END) AS completadas,
+                   SUM(CASE WHEN estado = 'Pendiente' THEN 1 ELSE 0 END) AS pendientes,
+                   COALESCE(AVG(tiempo_estimado), 0)
+            FROM reparaciones
+            WHERE tecnico IS NOT NULL AND tecnico != ''
+            GROUP BY tecnico
+            ORDER BY tecnico
+            """,
+        )
+    else:
+        cur.execute(
+            """
+            SELECT tecnico,
+                   SUM(CASE WHEN estado = 'Completada' THEN 1 ELSE 0 END) AS completadas,
+                   SUM(CASE WHEN estado = 'Pendiente' THEN 1 ELSE 0 END) AS pendientes,
+                   COALESCE(AVG(tiempo_estimado), 0)
+            FROM reparaciones
+            WHERE tecnico IS NOT NULL AND tecnico != '' AND sucursal_id = ?
+            GROUP BY tecnico
+            ORDER BY tecnico
+            """,
+            (sucursal_id,),
+        )
     return cur.fetchall()
 
 
-def get_financial_summary() -> List[Tuple[str, float, float, float]]:
+def get_financial_summary(sucursal_id: int | None = None) -> List[Tuple[str, float, float, float]]:
     """Return financial summary per month.
 
     Each tuple contains:
@@ -1039,26 +1171,51 @@ def get_financial_summary() -> List[Tuple[str, float, float, float]]:
     """
     cur = _ensure_conn().cursor()
     # Ingresos por mes
-    cur.execute(
-        """
-        SELECT strftime('%Y-%m', fecha) AS periodo, SUM(total)
-        FROM facturas
-        GROUP BY periodo
-        ORDER BY periodo
-        """
-    )
+    if sucursal_id is None:
+        cur.execute(
+            """
+            SELECT strftime('%Y-%m', fecha) AS periodo, SUM(total)
+            FROM facturas
+            GROUP BY periodo
+            ORDER BY periodo
+            """
+        )
+    else:
+        cur.execute(
+            """
+            SELECT strftime('%Y-%m', fecha) AS periodo, SUM(total)
+            FROM facturas
+            WHERE sucursal_id = ?
+            GROUP BY periodo
+            ORDER BY periodo
+            """,
+            (sucursal_id,),
+        )
     ingresos = {period: total or 0.0 for period, total in cur.fetchall()}
 
     # Costos por mes
-    cur.execute(
-        """
-        SELECT strftime('%Y-%m', fecha) AS periodo,
-               SUM(COALESCE(costo, 0) + COALESCE(costo_mano_obra, 0))
-        FROM reparaciones
-        GROUP BY periodo
-        ORDER BY periodo
-        """
-    )
+    if sucursal_id is None:
+        cur.execute(
+            """
+            SELECT strftime('%Y-%m', fecha) AS periodo,
+                   SUM(COALESCE(costo, 0) + COALESCE(costo_mano_obra, 0))
+            FROM reparaciones
+            GROUP BY periodo
+            ORDER BY periodo
+            """
+        )
+    else:
+        cur.execute(
+            """
+            SELECT strftime('%Y-%m', fecha) AS periodo,
+                   SUM(COALESCE(costo, 0) + COALESCE(costo_mano_obra, 0))
+            FROM reparaciones
+            WHERE sucursal_id = ?
+            GROUP BY periodo
+            ORDER BY periodo
+            """,
+            (sucursal_id,),
+        )
     costos = {period: total or 0.0 for period, total in cur.fetchall()}
 
     periods = sorted(set(ingresos) | set(costos))
@@ -1072,27 +1229,39 @@ def get_financial_summary() -> List[Tuple[str, float, float, float]]:
 
 # --- Inventario ---
 
-def get_products() -> List[Tuple[int, str, int]]:
+def get_products(sucursal_id: int | None = None) -> List[Tuple[int, str, int]]:
     cur = _ensure_conn().cursor()
-    cur.execute("SELECT id, nombre, cantidad FROM inventario ORDER BY id")
+    if sucursal_id is None:
+        cur.execute("SELECT id, nombre, cantidad FROM inventario ORDER BY id")
+    else:
+        cur.execute(
+            "SELECT id, nombre, cantidad FROM inventario WHERE sucursal_id = ? ORDER BY id",
+            (sucursal_id,),
+        )
     return cur.fetchall()
 
 
-def find_product_by_name(nombre: str) -> Optional[int]:
+def find_product_by_name(nombre: str, sucursal_id: int | None = None) -> Optional[int]:
     cur = _ensure_conn().cursor()
-    cur.execute("SELECT id FROM inventario WHERE nombre = ?", (nombre,))
+    if sucursal_id is None:
+        cur.execute("SELECT id FROM inventario WHERE nombre = ?", (nombre,))
+    else:
+        cur.execute(
+            "SELECT id FROM inventario WHERE nombre = ? AND sucursal_id = ?",
+            (nombre, sucursal_id),
+        )
     row = cur.fetchone()
     return row[0] if row else None
 
 
-def add_product(nombre: str, cantidad: int) -> Optional[int]:
-    if find_product_by_name(nombre) is not None:
+def add_product(nombre: str, cantidad: int, *, sucursal_id: int | None = None) -> Optional[int]:
+    if find_product_by_name(nombre, sucursal_id) is not None:
         return None
     conn = _ensure_conn()
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO inventario (nombre, cantidad) VALUES (?, ?)",
-        (nombre, cantidad),
+        "INSERT INTO inventario (nombre, cantidad, sucursal_id) VALUES (?, ?, ?)",
+        (nombre, cantidad, sucursal_id),
     )
     conn.commit()
     return cur.lastrowid
@@ -1239,15 +1408,17 @@ def add_repuesto(
     proveedor: Optional[str],
     precio: float,
     stock_min: int = 0,
+    *,
+    sucursal_id: int | None = None,
 ) -> int:
     conn = _ensure_conn()
     cur = conn.cursor()
     cur.execute(
         """
-        INSERT INTO repuestos (nombre, stock, stock_min, proveedor, precio)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO repuestos (nombre, stock, stock_min, proveedor, precio, sucursal_id)
+        VALUES (?, ?, ?, ?, ?, ?)
         """,
-        (nombre, stock, stock_min, proveedor, precio),
+        (nombre, stock, stock_min, proveedor, precio, sucursal_id),
     )
     conn.commit()
     return cur.lastrowid
@@ -1287,14 +1458,114 @@ def assign_repuesto_to_repair(
     return True
 
 
-def get_low_stock_repuestos(limit: int = 8) -> List[Tuple[str, int, int]]:
+def get_low_stock_repuestos(limit: int = 8, sucursal_id: int | None = None) -> List[Tuple[str, int, int]]:
     cur = _ensure_conn().cursor()
-    cur.execute(
-        "SELECT nombre, stock, stock_min FROM repuestos "
-        "WHERE stock <= stock_min ORDER BY stock ASC, nombre ASC LIMIT ?",
-        (limit,),
-    )
+    if sucursal_id is None:
+        cur.execute(
+            "SELECT nombre, stock, stock_min FROM repuestos "
+            "WHERE stock <= stock_min ORDER BY stock ASC, nombre ASC LIMIT ?",
+            (limit,),
+        )
+    else:
+        cur.execute(
+            "SELECT nombre, stock, stock_min FROM repuestos "
+            "WHERE stock <= stock_min AND sucursal_id = ? ORDER BY stock ASC, nombre ASC LIMIT ?",
+            (sucursal_id, limit),
+        )
     return cur.fetchall()
+
+
+def transfer_repuesto(
+    nombre: str, from_sucursal: int, to_sucursal: int, cantidad: int
+) -> bool:
+    """Transfer inventory of a part between branches."""
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT id, stock, stock_min, proveedor, precio FROM repuestos WHERE nombre = ? AND sucursal_id = ?",
+        (nombre, from_sucursal),
+    )
+    row = cur.fetchone()
+    if not row or row[1] < cantidad:
+        return False
+    source_id, stock, stock_min, proveedor, precio = row
+    cur.execute("UPDATE repuestos SET stock = stock - ? WHERE id = ?", (cantidad, source_id))
+    cur.execute(
+        "SELECT id FROM repuestos WHERE nombre = ? AND sucursal_id = ?",
+        (nombre, to_sucursal),
+    )
+    dest = cur.fetchone()
+    if dest:
+        cur.execute("UPDATE repuestos SET stock = stock + ? WHERE id = ?", (cantidad, dest[0]))
+    else:
+        cur.execute(
+            """
+            INSERT INTO repuestos (nombre, stock, stock_min, proveedor, precio, sucursal_id)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (nombre, cantidad, stock_min, proveedor, precio, to_sucursal),
+        )
+    conn.commit()
+    return True
+
+
+# --- Sucursales y Configuración ---
+
+def add_sucursal(nombre: str) -> int:
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute("INSERT INTO sucursales (nombre) VALUES (?)", (nombre,))
+    conn.commit()
+    return cur.lastrowid
+
+
+def list_sucursales() -> List[Tuple[int, str]]:
+    cur = _ensure_conn().cursor()
+    cur.execute("SELECT id, nombre FROM sucursales ORDER BY id")
+    return cur.fetchall()
+
+
+def transfer_reparacion(reparacion_id: int, to_sucursal: int) -> bool:
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE reparaciones SET sucursal_id = ? WHERE id = ?",
+        (to_sucursal, reparacion_id),
+    )
+    conn.commit()
+    return cur.rowcount > 0
+
+
+def set_config(clave: str, valor: str, sucursal_id: int | None = None) -> None:
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        INSERT INTO config (clave, valor, sucursal_id)
+        VALUES (?, ?, ?)
+        ON CONFLICT(clave, sucursal_id) DO UPDATE SET valor = excluded.valor
+        """,
+        (clave, valor, sucursal_id),
+    )
+    conn.commit()
+
+
+def get_config(clave: str, sucursal_id: int | None = None) -> Optional[str]:
+    cur = _ensure_conn().cursor()
+    if sucursal_id is not None:
+        cur.execute(
+            "SELECT valor FROM config WHERE clave = ? AND sucursal_id = ?",
+            (clave, sucursal_id),
+        )
+        row = cur.fetchone()
+        if row:
+            return row[0]
+    cur.execute(
+        "SELECT valor FROM config WHERE clave = ? AND sucursal_id IS NULL",
+        (clave,),
+    )
+    row = cur.fetchone()
+    return row[0] if row else None
 
 
 # --- Usuarios ---
