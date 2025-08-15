@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
-from PySide6.QtWidgets import QDialog, QMessageBox, QMainWindow
+from PySide6.QtWidgets import QMessageBox
 from PySide6.QtGui import QIcon
 
 from app.resources import icons_rc  # noqa: F401
 
 from app.ui.ui_reparaciones import Ui_ReparacionesDialog
 from app.data import db
+from .base_dialog import BaseDialog
 
 
-class ReparacionesDialog(QDialog):
+class ReparacionesDialog(BaseDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.ui = Ui_ReparacionesDialog()
@@ -32,21 +33,6 @@ class ReparacionesDialog(QDialog):
 
         self.ui.btnGuardar.clicked.connect(self._guardar)
         self.ui.btnCancelar.clicked.connect(self.reject)
-
-    def _set_button_icon(self, btn, resource):
-        icon = QIcon(resource)
-        if not icon.isNull():
-            btn.setIcon(icon)
-
-    def _show_status(self, text: str) -> None:
-        parent = self.parent()
-        if isinstance(parent, QMainWindow):
-            parent.statusBar().showMessage(text, 3000)
-
-    def _set_error(self, widget, state: bool) -> None:
-        widget.setProperty("error", state)
-        widget.style().unpolish(widget)
-        widget.style().polish(widget)
 
     def _guardar(self):
         cliente = self.ui.lineEditCliente.text().strip()
