@@ -974,6 +974,67 @@ def get_workload_metrics() -> List[Tuple[str, int, int]]:
     return cur.fetchall()
 
 
+def get_productivity_metrics() -> List[Tuple[str, int, int, float]]:
+    """Return productivity metrics per technician.
+
+    Each tuple contains:
+        (technician, completed_repairs, pending_repairs, avg_estimated_time)
+    """
+    cur = _ensure_conn().cursor()
+    cur.execute(
+        """
+        SELECT tecnico,
+               SUM(CASE WHEN estado = 'Completada' THEN 1 ELSE 0 END) AS completadas,
+               SUM(CASE WHEN estado = 'Pendiente' THEN 1 ELSE 0 END) AS pendientes,
+               COALESCE(AVG(tiempo_estimado), 0)
+        FROM reparaciones
+        WHERE tecnico IS NOT NULL AND tecnico != ''
+        GROUP BY tecnico
+        ORDER BY tecnico
+        """
+    )
+    return cur.fetchall()
+
+
+def get_financial_summary() -> List[Tuple[str, float, float, float]]:
+    """Return financial summary per month.
+
+    Each tuple contains:
+        (period, ingresos, costos, margen)
+    """
+    cur = _ensure_conn().cursor()
+    # Ingresos por mes
+    cur.execute(
+        """
+        SELECT strftime('%Y-%m', fecha) AS periodo, SUM(total)
+        FROM facturas
+        GROUP BY periodo
+        ORDER BY periodo
+        """
+    )
+    ingresos = {period: total or 0.0 for period, total in cur.fetchall()}
+
+    # Costos por mes
+    cur.execute(
+        """
+        SELECT strftime('%Y-%m', fecha) AS periodo,
+               SUM(COALESCE(costo, 0) + COALESCE(costo_mano_obra, 0))
+        FROM reparaciones
+        GROUP BY periodo
+        ORDER BY periodo
+        """
+    )
+    costos = {period: total or 0.0 for period, total in cur.fetchall()}
+
+    periods = sorted(set(ingresos) | set(costos))
+    summary: List[Tuple[str, float, float, float]] = []
+    for period in periods:
+        inc = ingresos.get(period, 0.0)
+        cost = costos.get(period, 0.0)
+        summary.append((period, inc, cost, inc - cost))
+    return summary
+
+
 # --- Inventario ---
 
 def get_products() -> List[Tuple[int, str, int]]:

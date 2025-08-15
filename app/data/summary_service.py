@@ -35,3 +35,19 @@ def get_workload_metrics() -> List[Tuple[str, int, int]]:
         return db.get_workload_metrics()
     except Exception:
         return []
+
+
+def get_productivity_metrics() -> List[Tuple[str, int, int, float]]:
+    """Return productivity metrics per technician."""
+    try:
+        return db.get_productivity_metrics()
+    except Exception:
+        return []
+
+
+def get_financial_summary() -> List[Tuple[str, float, float, float]]:
+    """Return monthly financial summary."""
+    try:
+        return db.get_financial_summary()
+    except Exception:
+        return []
