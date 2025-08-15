@@ -23,8 +23,8 @@ class ClientesDialog(BaseDialog):
         self._set_button_icon(self.ui.btnEliminar, ":/icons/exit.svg")
         self._set_button_icon(self.ui.btnCerrar, ":/icons/exit.svg")
 
-        phone_regex = QRegularExpression(r"^$|[0-9 +]+$")
-        email_regex = QRegularExpression(r"^$|[^@\s]+@[^@\s]+\.[^@\s]+$")
+        phone_regex = QRegularExpression(r"^[0-9 +]*$")
+        email_regex = QRegularExpression(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
         self.ui.lineEditTelefono.setValidator(QRegularExpressionValidator(phone_regex, self))
         self.ui.lineEditEmail.setValidator(QRegularExpressionValidator(email_regex, self))
 
