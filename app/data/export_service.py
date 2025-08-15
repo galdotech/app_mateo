@@ -8,8 +8,19 @@ from typing import List, Tuple
 from . import db
 
 
+ALLOWED_TABLES = (
+    "clientes",
+    "dispositivos",
+    "inventario",
+    "reparaciones",
+    "usuarios",
+)
+
+
 def _fetch_table(table: str) -> Tuple[List[str], List[Tuple]]:
     """Return column names and all rows for the given table."""
+    if table not in ALLOWED_TABLES:
+        raise ValueError(f"Invalid table name: {table}")
     conn = db._ensure_conn()
     cur = conn.cursor()
     cur.execute(f"SELECT * FROM {table}")
