@@ -77,6 +77,18 @@ def _create_tables(conn: sqlite3.Connection) -> None:
     )
     cur.execute(
         """
+        CREATE TABLE IF NOT EXISTS repuestos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL,
+            stock INTEGER DEFAULT 0,
+            stock_min INTEGER DEFAULT 0,
+            proveedor TEXT,
+            precio REAL DEFAULT 0
+        )
+        """
+    )
+    cur.execute(
+        """
         CREATE TABLE IF NOT EXISTS reparaciones (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             dispositivo_id INTEGER NOT NULL,
@@ -85,6 +97,18 @@ def _create_tables(conn: sqlite3.Connection) -> None:
             costo REAL DEFAULT 0,
             estado TEXT DEFAULT 'Pendiente',
             FOREIGN KEY (dispositivo_id) REFERENCES dispositivos(id) ON DELETE CASCADE
+        )
+        """
+    )
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS reparacion_repuestos (
+            reparacion_id INTEGER NOT NULL,
+            repuesto_id INTEGER NOT NULL,
+            cantidad INTEGER NOT NULL DEFAULT 1,
+            PRIMARY KEY (reparacion_id, repuesto_id),
+            FOREIGN KEY (reparacion_id) REFERENCES reparaciones(id) ON DELETE CASCADE,
+            FOREIGN KEY (repuesto_id) REFERENCES repuestos(id) ON DELETE CASCADE
         )
         """
     )
@@ -935,6 +959,72 @@ def update_product_ext(product_id: int, **campos) -> bool:
     cur.execute(f"UPDATE inventario SET {', '.join(fields)} WHERE id = ?", params)
     conn.commit()
     return cur.rowcount > 0
+
+
+# --- Repuestos ---
+
+def add_repuesto(
+    nombre: str,
+    stock: int,
+    proveedor: Optional[str],
+    precio: float,
+    stock_min: int = 0,
+) -> int:
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        INSERT INTO repuestos (nombre, stock, stock_min, proveedor, precio)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (nombre, stock, stock_min, proveedor, precio),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def use_repuesto(repuesto_id: int, cantidad: int = 1) -> bool:
+    cur = _ensure_conn().cursor()
+    cur.execute("SELECT stock FROM repuestos WHERE id = ?", (repuesto_id,))
+    row = cur.fetchone()
+    if not row or row[0] < cantidad:
+        return False
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE repuestos SET stock = stock - ? WHERE id = ?",
+        (cantidad, repuesto_id),
+    )
+    conn.commit()
+    return True
+
+
+def assign_repuesto_to_repair(
+    repair_id: int, repuesto_id: int, cantidad: int = 1
+) -> bool:
+    if not use_repuesto(repuesto_id, cantidad):
+        return False
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        INSERT INTO reparacion_repuestos (reparacion_id, repuesto_id, cantidad)
+        VALUES (?, ?, ?)
+        """,
+        (repair_id, repuesto_id, cantidad),
+    )
+    conn.commit()
+    return True
+
+
+def get_low_stock_repuestos(limit: int = 8) -> List[Tuple[str, int, int]]:
+    cur = _ensure_conn().cursor()
+    cur.execute(
+        "SELECT nombre, stock, stock_min FROM repuestos "
+        "WHERE stock <= stock_min ORDER BY stock ASC, nombre ASC LIMIT ?",
+        (limit,),
+    )
+    return cur.fetchall()
 
 
 # --- Usuarios ---

@@ -12,6 +12,7 @@ ALLOWED_TABLES = (
     "clientes",
     "dispositivos",
     "inventario",
+    "repuestos",
     "reparaciones",
     "usuarios",
 )
@@ -51,3 +52,25 @@ def export_table_to_excel(table: str, filepath: str) -> None:
     for row in rows:
         ws.append(row)
     wb.save(filepath)
+
+
+def import_table_from_csv(table: str, filepath: str) -> None:
+    """Import rows from a CSV file into the given table.
+
+    Existing rows in the table will be removed before import.
+    """
+    if table not in ALLOWED_TABLES:
+        raise ValueError(f"Invalid table name: {table}")
+    with open(filepath, newline="", encoding="utf-8") as fh:
+        reader = csv.reader(fh)
+        headers = next(reader)
+        rows = [row for row in reader]
+    conn = db._ensure_conn()
+    cur = conn.cursor()
+    cur.execute(f"DELETE FROM {table}")
+    placeholders = ", ".join("?" for _ in headers)
+    cur.executemany(
+        f"INSERT INTO {table} ({', '.join(headers)}) VALUES ({placeholders})",
+        rows,
+    )
+    conn.commit()
