@@ -55,7 +55,8 @@ def _create_tables(conn: sqlite3.Connection) -> None:
         CREATE TABLE IF NOT EXISTS inventario (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre TEXT NOT NULL,
-            cantidad INTEGER DEFAULT 0
+            cantidad INTEGER DEFAULT 0,
+            stock_min INTEGER DEFAULT 0
         )
         """
     )
@@ -118,6 +119,21 @@ def _create_tables(conn: sqlite3.Connection) -> None:
         pass
 
     conn.commit()
+
+
+def _ensure_stock_min_column(conn: sqlite3.Connection) -> None:
+    """Ensure the inventario table has a stock_min column."""
+    cur = conn.cursor()
+    cur.execute("PRAGMA table_info(inventario)")
+    columns = [row[1] for row in cur.fetchall()]
+    if "stock_min" not in columns:
+        try:
+            cur.execute(
+                "ALTER TABLE inventario ADD COLUMN stock_min INTEGER DEFAULT 0"
+            )
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass
 
 
 def migrate_if_needed(conn: sqlite3.Connection) -> None:
@@ -252,6 +268,7 @@ def init_db(path: str = DB_PATH) -> None:
     global DB_PATH
     DB_PATH = path
     conn = _ensure_conn()
+    _ensure_stock_min_column(conn)
     migrate_if_needed(conn)
 
 def contar_clientes() -> int:
