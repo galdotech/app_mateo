@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from PySide6.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QMessageBox, QAbstractItemView
 from PySide6.QtGui import QRegularExpressionValidator, QStandardItemModel, QStandardItem, QIcon
 from PySide6.QtCore import QRegularExpression, Qt
 
@@ -40,6 +40,7 @@ class ClientesDialog(BaseDialog):
         self.proxy.setSourceModel(self.model)
         self.ui.tableClientes.setModel(self.proxy)
         self.ui.tableClientes.setSortingEnabled(True)
+        self.ui.tableClientes.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.ui.tableClientes.selectionModel().selectionChanged.connect(
             lambda *_: self.cargar_seleccion()
         )
@@ -72,6 +73,8 @@ class ClientesDialog(BaseDialog):
                 QStandardItem(telefono or ""),
                 QStandardItem(email or ""),
             ]
+            for item in row:
+                item.setEditable(False)
             self.model.appendRow(row)
         self.ui.tableClientes.resizeColumnsToContents()
 
