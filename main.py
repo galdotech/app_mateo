@@ -31,6 +31,8 @@ def main():
 
     # Inicializa BD (lazy-safe: crea si no existe)
     db.init_db()
+    # Consulta inventario al iniciar la app
+    db.listar_productos_detallado()
 
     login = LoginDialog()
     if login.exec() != QDialog.Accepted:

@@ -8,11 +8,12 @@ from typing import Optional, Type
 
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QDialog, QMainWindow, QMessageBox, QApplication, QTableWidgetItem
-from PySide6.QtCore import QSettings, Qt
+from PySide6.QtCore import QSettings, Qt, QTimer
 
 from app.resources import icons_rc  # noqa: F401
 from app.ui.ui_main_window import Ui_MainWindow
 from app.data import db
+from .notificaciones import notify_low_stock, notify_pending_repairs
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +59,7 @@ class MainWindow(QMainWindow):
 
         # Resumen inicial
         self.refresh_all()
+        self._setup_notification_timer()
 
     def _apply_role_permissions(self) -> None:
         if self.user_role != "admin":
@@ -178,6 +180,25 @@ class MainWindow(QMainWindow):
         table.setAlternatingRowColors(True)
         table.setSortingEnabled(True)
         table.resizeColumnsToContents()
+
+    def _setup_notification_timer(self) -> None:
+        self._last_low_stock = []
+        self._last_pending_count = 0
+        self._timer = QTimer(self)
+        self._timer.setInterval(60000)  # 1 minuto
+        self._timer.timeout.connect(self._check_notifications)
+        self._timer.start()
+        self._check_notifications()
+
+    def _check_notifications(self) -> None:
+        low_stock = db.get_low_stock_products()
+        if low_stock and low_stock != self._last_low_stock:
+            notify_low_stock(self, low_stock)
+            self._last_low_stock = low_stock
+        pending = db.contar_reparaciones_pendientes()
+        if pending and pending != self._last_pending_count:
+            notify_pending_repairs(self, pending)
+            self._last_pending_count = pending
 
     def _set_label_text(self, names, value):
         for name in names:
