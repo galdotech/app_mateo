@@ -446,6 +446,23 @@ def find_device(cliente_id: int, marca: str, modelo: str, imei: Optional[str] = 
     return row[0] if row else None
 
 
+def find_device_by_serial(n_serie: str, exclude_id: int | None = None) -> Optional[int]:
+    """Return device id matching the given serial number.
+
+    Optionally exclude a specific device id (useful when updating).
+    """
+    cur = _ensure_conn().cursor()
+    if exclude_id is None:
+        cur.execute("SELECT id FROM dispositivos WHERE n_serie = ?", (n_serie,))
+    else:
+        cur.execute(
+            "SELECT id FROM dispositivos WHERE n_serie = ? AND id != ?",
+            (n_serie, exclude_id),
+        )
+    row = cur.fetchone()
+    return row[0] if row else None
+
+
 def add_device(
     cliente_id: int,
     marca: str,
@@ -454,10 +471,17 @@ def add_device(
     n_serie: Optional[str] = None,
     color: Optional[str] = None,
     accesorios: Optional[str] = None,
-) -> int:
+) -> Optional[int]:
+    """Add a new device and return its id.
+
+    If a device with same cliente/marca/modelo/imei exists or the serial number is
+    already used, return None.
+    """
     did = find_device(cliente_id, marca, modelo, imei)
     if did is not None:
         return did
+    if n_serie and find_device_by_serial(n_serie) is not None:
+        return None
     conn = _ensure_conn()
     cur = conn.cursor()
     cur.execute(
@@ -500,6 +524,24 @@ def listar_dispositivos_detallado() -> List[
     return cur.fetchall()
 
 
+def listar_dispositivos_por_cliente(cliente_id: int) -> List[
+    Tuple[int, int, str, Optional[str], Optional[str], Optional[str], Optional[str], Optional[str], Optional[str]]
+]:
+    """Return detailed devices for a specific client."""
+    cur = _ensure_conn().cursor()
+    cur.execute(
+        """
+        SELECT d.id, d.cliente_id, c.nombre, d.marca, d.modelo, d.imei, d.n_serie, d.color, d.accesorios
+        FROM dispositivos d
+        JOIN clientes c ON d.cliente_id = c.id
+        WHERE d.cliente_id = ?
+        ORDER BY d.id
+        """,
+        (cliente_id,),
+    )
+    return cur.fetchall()
+
+
 
 
 def update_device(device_id: int, **campos) -> bool:
@@ -511,6 +553,10 @@ def update_device(device_id: int, **campos) -> bool:
     for key, value in campos.items():
         if key not in allowed:
             continue
+        if key == "n_serie" and value:
+            # Ensure serial number is unique when updating
+            if find_device_by_serial(value, exclude_id=device_id) is not None:
+                return False
         fields.append(f"{key} = ?")
         params.append(value)
     if not fields:
