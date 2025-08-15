@@ -6,6 +6,8 @@ Proyecto base mínimo con estructura MVC para app de escritorio en Linux (PySide
 - Python 3.10+ recomendado
 - Linux (funciona también en macOS/Windows)
 - `pip install -r requirements.txt`
+- En algunas distribuciones minimalistas puede ser necesario instalar librerías de sistema adicionales:
+  `libgl1`, `libegl1` y `libxkbcommon0`
 
 ## Entorno
 ```bash
