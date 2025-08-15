@@ -28,6 +28,7 @@ class DispositivosDialog(BaseDialog):
         self.ui.btnAgregar.clicked.connect(self.agregar)
         self.ui.btnEliminar.clicked.connect(self.eliminar)
         self.ui.btnCerrar.clicked.connect(self.cerrar)
+        self.ui.comboCliente.currentIndexChanged.connect(self._load_dispositivos)
 
         # Model + proxy
         self.model = QStandardItemModel(0, 7, self)
@@ -58,6 +59,7 @@ class DispositivosDialog(BaseDialog):
     def _load_clientes(self):
         combo = self.ui.comboCliente
         combo.clear()
+        combo.addItem("Todos", None)
         for cid, nombre in db.listar_clientes():
             combo.addItem(nombre, cid)
 
@@ -65,6 +67,11 @@ class DispositivosDialog(BaseDialog):
         self._updating = True
         self.model.blockSignals(True)
         self.model.setRowCount(0)
+        cid = self.ui.comboCliente.currentData()
+        if cid is None:
+            dispositivos = db.listar_dispositivos_detallado()
+        else:
+            dispositivos = db.listar_dispositivos_por_cliente(cid)
         for (
             did,
             cid,
@@ -75,7 +82,7 @@ class DispositivosDialog(BaseDialog):
             n_serie,
             color,
             accesorios,
-        ) in db.listar_dispositivos_detallado():
+        ) in dispositivos:
             row = [
                 QStandardItem(cname),
                 QStandardItem(marca or ""),
@@ -111,7 +118,7 @@ class DispositivosDialog(BaseDialog):
             return
         self._set_error(self.ui.lineEditMarca, False)
         self._set_error(self.ui.lineEditModelo, False)
-        db.add_device(
+        did = db.add_device(
             cid,
             marca,
             modelo,
@@ -120,6 +127,10 @@ class DispositivosDialog(BaseDialog):
             color or None,
             accesorios or None,
         )
+        if did is None:
+            QMessageBox.warning(
+                self, "Validación", "Número de serie ya registrado.")
+            return
         self._changed = True
         self.ui.lineEditMarca.clear()
         self.ui.lineEditModelo.clear()
@@ -149,7 +160,7 @@ class DispositivosDialog(BaseDialog):
             QMessageBox.warning(self, "Validación", "Modelo no puede estar vacío.")
             self._load_dispositivos()
             return
-        db.update_device(
+        updated = db.update_device(
             did,
             modelo=modelo,
             imei=imei or None,
@@ -157,6 +168,11 @@ class DispositivosDialog(BaseDialog):
             color=color or None,
             accesorios=accesorios or None,
         )
+        if not updated:
+            QMessageBox.warning(
+                self, "Validación", "Número de serie ya registrado.")
+            self._load_dispositivos()
+            return
         self._changed = True
         self._show_status("Dispositivo actualizado")
 
