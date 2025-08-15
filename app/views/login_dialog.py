@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QKeySequence, QShortcut
 
-from app.data import db
+from app.services.auth import auth_service
 
 
 class LoginDialog(QDialog):
@@ -57,13 +57,8 @@ class LoginDialog(QDialog):
         if not nombre or not password:
             QMessageBox.warning(self, "Login", "Ingrese usuario y contraseña.")
             return
-        user = db.get_usuario(nombre)
-        if user is None:
-            QMessageBox.warning(self, "Login", "Usuario no encontrado.")
+        if not auth_service.login(nombre, password):
+            QMessageBox.warning(self, "Login", "Usuario o contraseña incorrectos.")
             return
-        _, password_hash, salt, rol = user
-        if not db.verify_password(password, password_hash, salt):
-            QMessageBox.warning(self, "Login", "Contraseña incorrecta.")
-            return
-        self.user_role = rol
+        self.user_role = auth_service.current_user.rol if auth_service.current_user else None
         self.accept()

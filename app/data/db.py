@@ -3,6 +3,8 @@ import sqlite3
 import os
 import hashlib
 import hmac
+import secrets
+import time
 from typing import Optional, List, Tuple
 
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "inventario_app.db")
@@ -15,6 +17,12 @@ def hash_password(password: str, salt: bytes | None = None) -> Tuple[str, str]:
         salt = os.urandom(16)
     hashed = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 100000)
     return hashed.hex(), salt.hex()
+
+
+def validate_password(password: str) -> None:
+    """Validate password against basic security policies."""
+    if len(password) < 8:
+        raise ValueError("Password must be at least 8 characters long")
 
 
 def verify_password(password: str, password_hash: str, salt: str) -> bool:
@@ -544,6 +552,33 @@ def migrate_if_needed(conn: sqlite3.Connection) -> None:
             """
         )
         cur.execute("UPDATE meta SET schema_version = 11")
+        conn.commit()
+
+    if version < 12:
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS auditoria (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                usuario TEXT NOT NULL,
+                accion TEXT NOT NULL,
+                tabla TEXT,
+                registro_id INTEGER,
+                fecha TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS password_resets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                usuario_id INTEGER NOT NULL,
+                token TEXT NOT NULL,
+                expira INTEGER NOT NULL,
+                FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+            )
+            """
+        )
+        cur.execute("UPDATE meta SET schema_version = 12")
         conn.commit()
 
 # API pública
@@ -1265,6 +1300,9 @@ def get_low_stock_repuestos(limit: int = 8) -> List[Tuple[str, int, int]]:
 # --- Usuarios ---
 
 def add_usuario(nombre: str, password: str, rol: str) -> int:
+    validate_password(password)
+    if rol not in {"admin", "tecnico", "recepcionista"}:
+        raise ValueError("Invalid role")
     conn = _ensure_conn()
     cur = conn.cursor()
     pwd_hash, salt = hash_password(password)
@@ -1284,6 +1322,72 @@ def get_usuario(nombre: str) -> Optional[Tuple[int, str, str, str]]:
     )
     row = cur.fetchone()
     return row if row else None
+
+
+def create_password_reset(nombre: str, ttl_seconds: int = 3600) -> str:
+    """Create a password reset token for the given user name."""
+    user = get_usuario(nombre)
+    if user is None:
+        raise ValueError("Usuario no encontrado")
+    user_id = user[0]
+    token = secrets.token_hex(16)
+    expires = int(time.time()) + ttl_seconds
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO password_resets (usuario_id, token, expira) VALUES (?, ?, ?)",
+        (user_id, token, expires),
+    )
+    conn.commit()
+    return token
+
+
+def reset_password(token: str, new_password: str) -> bool:
+    """Reset a user's password given a valid token."""
+    validate_password(new_password)
+    now = int(time.time())
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT usuario_id FROM password_resets WHERE token = ? AND expira > ?",
+        (token, now),
+    )
+    row = cur.fetchone()
+    if row is None:
+        return False
+    user_id = row[0]
+    pwd_hash, salt = hash_password(new_password)
+    cur.execute(
+        "UPDATE usuarios SET password_hash = ?, salt = ? WHERE id = ?",
+        (pwd_hash, salt, user_id),
+    )
+    cur.execute("DELETE FROM password_resets WHERE token = ?", (token,))
+    conn.commit()
+    return True
+
+
+def log_audit(usuario: str, accion: str, tabla: str | None, registro_id: int | None) -> int:
+    """Store an audit log entry for a critical action."""
+    conn = _ensure_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO auditoria (usuario, accion, tabla, registro_id) VALUES (?, ?, ?, ?)",
+        (usuario, accion, tabla, registro_id),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def get_audit_logs(usuario: str | None = None) -> List[Tuple[int, str, str, str | None, int | None, str]]:
+    """Return audit log entries optionally filtered by user."""
+    cur = _ensure_conn().cursor()
+    query = "SELECT id, usuario, accion, tabla, registro_id, fecha FROM auditoria"
+    params: List[object] = []
+    if usuario:
+        query += " WHERE usuario = ?"
+        params.append(usuario)
+    cur.execute(query, params)
+    return cur.fetchall()
 
 
 # --- Tickets ---
