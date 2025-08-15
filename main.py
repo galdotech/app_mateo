@@ -21,6 +21,7 @@ def load_stylesheet(path: Path) -> str:
 def main():
     QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
     app = QApplication(sys.argv)
+    app.aboutToQuit.connect(db.close_db)
 
     settings = QSettings("galdotech", "app_mateo")
     theme = settings.value("ui/theme", "light")
