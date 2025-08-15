@@ -329,17 +329,6 @@ def contar_reparaciones_pendientes() -> int:
     cur.execute("SELECT COUNT(*) FROM reparaciones WHERE estado = 'Pendiente'")
     return cur.fetchone()[0]
 
-
-def get_counts() -> Tuple[int, int, int, int]:
-    """Return total counts for dashboard."""
-    return (
-        contar_clientes(),
-        contar_dispositivos(),
-        contar_productos(),
-        contar_reparaciones_pendientes(),
-    )
-
-
 def get_low_stock_products(limit: int = 8) -> List[Tuple[str, int, int]]:
     cur = _ensure_conn().cursor()
     cur.execute(
